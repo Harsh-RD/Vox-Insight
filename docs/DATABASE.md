@@ -3,7 +3,7 @@
 This document details the planned PostgreSQL database structure for VoxInsight. This design captures our core relational entities, fields, constraints, and relationships.
 
 > [!IMPORTANT]
-> **Status**: Phase 1 implements the `users`, `workspaces`, `user_workspaces`, and `refresh_sessions` tables through SQLAlchemy models and Alembic migration `001_initial_auth_schema`. PostgreSQL is implemented/configured; runtime integration verification remains pending because Docker is unavailable in the current environment. The remaining tables are planned for later phases.
+> **Status**: Phase 2 implements `datasets` and `feedback` through SQLAlchemy models and Alembic migration `002_dataset_feedback_ingestion`, following `001_initial_auth_schema`. PostgreSQL is implemented/configured; runtime integration verification remains pending because Docker is unavailable in the current environment. Later analysis and RAG tables remain planned.
 
 ---
 
@@ -76,7 +76,7 @@ Tracks server-side refresh-token sessions. Raw refresh tokens are never stored; 
 | `created_at` | TIMESTAMP | Not Null | Session creation time |
 | `last_used_at` | TIMESTAMP | Nullable | Most recent token rotation time |
 
-### 2.4 Dataset
+### 2.4 Dataset (Implemented in Phase 2)
 Tracks imported feedback collections.
 
 | Field | Type | Constraints | Description |
@@ -85,20 +85,30 @@ Tracks imported feedback collections.
 | `workspace_id` | UUID | Foreign Key (Workspace.id) | Owner workspace |
 | `name` | VARCHAR(255) | Not Null | User-defined dataset label |
 | `description` | TEXT | Nullable | Brief explanation of dataset |
+| `source` | VARCHAR(255) | Nullable | Dataset source supplied by the user |
+| `original_filename` | VARCHAR(255) | Nullable | Uploaded CSV filename |
+| `row_count` | INTEGER | Not Null | Successfully imported feedback rows |
 | `status` | VARCHAR(50) | Not Null | Processing status (e.g., pending, completed) |
+| `created_by` | UUID | FK (User.id) | User that created the dataset |
 | `created_at` | TIMESTAMP | Default NOW() | Creation time |
+| `updated_at` | TIMESTAMP | Default NOW() | Last state change |
 
-### 2.5 Feedback
+### 2.5 Feedback (Implemented in Phase 2)
 Contains the individual raw customer feedback inputs.
 
 | Field | Type | Constraints | Description |
 |---|---|---|---|
 | `id` | UUID | Primary Key | Unique feedback record identifier |
 | `dataset_id` | UUID | Foreign Key (Dataset.id) | Source dataset reference |
-| `raw_text` | TEXT | Not Null | Original text content submitted |
-| `clean_text` | TEXT | Nullable | Post-normalized/transliterated text |
+| `workspace_id` | UUID | FK (Workspace.id), Indexed | Tenant isolation boundary |
+| `original_text` | TEXT | Not Null | Original text content submitted |
+| `rating` | FLOAT | Nullable | Supplied rating |
+| `source` | VARCHAR(255) | Nullable | Row source |
+| `feedback_timestamp` | TIMESTAMP | Nullable | Supplied feedback timestamp |
 | `language` | VARCHAR(50) | Nullable | Identified language (e.g., en, hi, hinglish) |
+| `processing_status` | VARCHAR(50) | Not Null | Initially `pending` for future NLP |
 | `created_at` | TIMESTAMP | Default NOW() | Submission time |
+| `updated_at` | TIMESTAMP | Default NOW() | Last state change |
 
 ### 2.6 AnalysisResult
 A 1-to-1 extension of Feedback capturing aggregated NLP model outputs.

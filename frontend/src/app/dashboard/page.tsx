@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/components/auth-provider";
@@ -22,7 +23,10 @@ function DashboardContent() {
           <p className="eyebrow">VoxInsight</p>
           <h1>Your workspace</h1>
         </div>
-        <button className="secondary-button" type="button" onClick={handleLogout}>Sign out</button>
+        <div className="header-actions">
+          <Link className="secondary-link" href="/datasets">Datasets</Link>
+          <button className="secondary-button" type="button" onClick={handleLogout}>Sign out</button>
+        </div>
       </header>
 
       <section className="welcome-card">

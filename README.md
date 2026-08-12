@@ -3,8 +3,8 @@
 VoxInsight is a full-stack SaaS platform designed to ingest, process, and analyze multilingual and code-mixed customer feedback (such as English, Hindi, and Romanized Hinglish) and translate it into actionable business intelligence.
 
 > [!IMPORTANT]
-> **Project Status**: Phase 1 — Application foundation, authentication, and workspace foundation.
-> FastAPI authentication, workspace APIs, SQLAlchemy/Alembic configuration, and a Next.js authentication shell are implemented. PostgreSQL runtime integration verification is pending because Docker is unavailable in the current environment.
+> **Project Status**: Phase 2 — Feedback/data ingestion.
+> Workspace-isolated datasets, feedback records, CSV ingestion, and the dataset-management UI are implemented. PostgreSQL runtime integration verification remains pending because Docker is unavailable in the current environment.
 
 ---
 
@@ -69,8 +69,8 @@ voxinsight/
 ## 6. Development Roadmap
 
 - **Phase 0**: Repository and architecture foundation *(completed)*
-- **Phase 1**: Application foundation, PostgreSQL, and authentication *(in progress: PostgreSQL runtime verification pending)*
-- **Phase 2**: Dataset and feedback ingestion
+- **Phase 1**: Application foundation, PostgreSQL, and authentication *(completed; PostgreSQL runtime verification pending)*
+- **Phase 2**: Dataset and feedback ingestion *(implemented; PostgreSQL runtime verification pending)*
 - **Phase 3**: Multilingual preprocessing and NLP pipeline
 - **Phase 4**: Embeddings and FAISS semantic retrieval
 - **Phase 5**: RAG and AI Assistant

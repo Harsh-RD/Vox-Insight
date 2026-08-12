@@ -9,10 +9,10 @@ This document is the persistent development-state record for the VoxInsight plat
 
 ## Current Status
 
-* **Current Phase**: Phase 1 — Application foundation, PostgreSQL, authentication, and workspace foundation
-* **Current Milestone**: Frontend authentication shell and backend authentication foundation
-* **Status**: In Progress (PostgreSQL runtime verification pending)
-* **Last Verified**: 2026-08-13 (backend unit tests; frontend type, lint, and production build checks)
+* **Current Phase**: Phase 2 — Feedback/data ingestion
+* **Current Milestone**: Workspace-isolated dataset and CSV feedback ingestion
+* **Status**: Implemented (PostgreSQL runtime verification pending)
+* **Last Verified**: 2026-08-13 (24 backend tests; frontend type, lint, and production build checks)
 
 ---
 
@@ -27,10 +27,13 @@ This document is the persistent development-state record for the VoxInsight plat
 - [x] Automatic Personal workspace creation during registration and workspace membership enforcement.
 - [x] Next.js + TypeScript + Tailwind frontend foundation with login, registration, session restoration, protected dashboard, and logout.
 - [x] Backend SQLite unit tests covering health, authentication, refresh rotation/revocation, and workspaces.
+- [x] Dataset and Feedback SQLAlchemy models plus additive Alembic migration `002_dataset_feedback_ingestion`.
+- [x] Workspace-member-only dataset creation, listing, retrieval, deletion, feedback retrieval, and UUID-guessing protection.
+- [x] CSV ingestion with required `text`, optional rating/source/timestamp/language, row validation, duplicate preservation, import summaries, and pending NLP status.
+- [x] Dataset management pages for creation, CSV upload, deletion, and feedback preview.
 
 ### In Progress
 - [/] PostgreSQL runtime migration and connectivity verification using Docker Compose.
-- [/] Commit the existing Phase 1 implementation once reviewed.
 
 ### Blocked
 - PostgreSQL runtime verification — Docker is unavailable in the current environment.
@@ -44,7 +47,7 @@ This document is the persistent development-state record for the VoxInsight plat
 ## Roadmap & Next Steps
 
 ### Next Task
-Verify the Alembic migration and backend against a running PostgreSQL container, then commit the completed Phase 1 foundation. Begin Phase 2 ingestion only after that verification is recorded.
+Verify migrations `001` and `002` against a running PostgreSQL container. Then begin Phase 3 multilingual preprocessing/NLP only after PostgreSQL verification is recorded.
 
 ### Future Development Phases
 - **Phase 0**: Repository and architecture foundation

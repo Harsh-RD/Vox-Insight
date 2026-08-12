@@ -3,7 +3,7 @@
 This document specifies the planned REST API interface for VoxInsight. The API communicates via JSON request and response bodies.
 
 > [!IMPORTANT]
-> **Status**: Phase 1 authentication, health, and workspace routes are implemented. The remaining modules below are planned for later phases.
+> **Status**: Phase 1 authentication/workspace routes and Phase 2 dataset/feedback ingestion routes are implemented. Later modules below are planned for subsequent phases.
 
 ---
 
@@ -77,27 +77,26 @@ Profile management and settings under active workspace boundaries.
   - Description: Update profile metadata (name, settings).
 
 ### 2.3 Datasets Module (`/api/v1/datasets`)
-CRUD operations for dataset metadata, file upload endpoints, and ingestion status.
+Implemented workspace-isolated dataset metadata and CSV ingestion. All endpoints require a workspace membership.
 
-* **GET `/datasets`**
-  - Description: List all datasets associated with the current workspace.
+* **GET `/datasets?workspace_id={workspace_id}`**
+  - Description: List datasets in a workspace the caller belongs to.
 * **POST `/datasets`**
   - Description: Create a new dataset placeholder.
 * **POST `/datasets/{dataset_id}/upload`**
-  - Description: Upload feedback files (CSV/JSON/TXT) for ingestion.
+  - Description: Upload CSV feedback through `multipart/form-data`.
   - Content-Type: `multipart/form-data`
-* **GET `/datasets/{dataset_id}/status`**
-  - Description: Check processing status (e.g., number of processed vs pending rows).
+  - Required column: `text`; optional: `rating`, `source`, `timestamp`, `language`.
+* **GET `/datasets/{dataset_id}`** and **DELETE `/datasets/{dataset_id}`**
+  - Description: Retrieve or delete an accessible dataset; deletion cascades to feedback.
+* **GET `/datasets/{dataset_id}/feedback`**
+  - Description: List feedback rows for an accessible dataset.
 
 ### 2.4 Feedback Module (`/api/v1/feedback`)
-Feedback logs and metadata filtering.
+Feedback records are created by CSV upload and are workspace isolated.
 
-* **GET `/feedback`**
-  - Description: List feedbacks with pagination and filters (by dataset, language, rating).
-* **POST `/feedback`**
-  - Description: Submit a single feedback text entry directly.
-* **DELETE `/feedback/{feedback_id}`**
-  - Description: Remove feedback records and sync deletion with FAISS.
+* **GET `/feedback/{feedback_id}`**
+  - Description: Retrieve one feedback record when the caller belongs to its workspace.
 
 ### 2.5 Analysis Module (`/api/v1/analysis`)
 NLP result inspections.

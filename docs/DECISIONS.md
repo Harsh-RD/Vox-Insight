@@ -71,3 +71,12 @@ This file documents the key technical and design decisions for VoxInsight to pro
 * **Reason**: This allows testing each pipeline segment independently. Furthermore, if a single model needs to be swapped out for a different LLM or fine-tuned transformer in the future, the change remains isolated to that specific module interface.
 * **Date**: 2026-08-13
 * **Status**: ACCEPTED (Planned - Phase 3)
+
+---
+
+## 8. Workspace-isolated CSV ingestion
+
+* **Decision**: Store datasets and feedback in PostgreSQL with a workspace foreign key on both records, enforcing membership checks in every data API route.
+* **Reason**: Keeping the workspace boundary directly on feedback prevents cross-tenant access when identifiers are guessed and provides a stable data foundation before NLP processing begins. CSV imports preserve duplicate source rows and report invalid rows rather than silently changing customer data.
+* **Date**: 2026-08-13
+* **Status**: IMPLEMENTED (Phase 2)

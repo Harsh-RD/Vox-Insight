@@ -40,6 +40,42 @@ export type CurrentUserResponse = {
   workspaces: Workspace[];
 };
 
+export type Dataset = {
+  id: string;
+  workspace_id: string;
+  name: string;
+  description: string | null;
+  source: string | null;
+  original_filename: string | null;
+  row_count: number;
+  status: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Feedback = {
+  id: string;
+  workspace_id: string;
+  dataset_id: string;
+  original_text: string;
+  rating: number | null;
+  source: string | null;
+  timestamp: string | null;
+  language: string | null;
+  processing_status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UploadSummary = {
+  dataset: Dataset;
+  rows_read: number;
+  rows_imported: number;
+  rows_skipped: number;
+  invalid_rows: Array<{ row: number; reason: string }>;
+};
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -124,6 +160,31 @@ async function request<T>(
   return parseResponse<T>(response);
 }
 
+async function upload<T>(path: string, file: File, mayRetryAfterRefresh = true): Promise<T> {
+  const headers = new Headers();
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method: "POST",
+    body: form,
+    headers,
+    credentials: "include",
+  });
+  if (response.status === 401 && mayRetryAfterRefresh) {
+    try {
+      await refreshAccessToken();
+      return upload<T>(path, file, false);
+    } catch {
+      setAccessToken(null);
+      onAuthenticationFailure?.();
+    }
+  }
+  return parseResponse<T>(response);
+}
+
 export const api = {
   setAccessToken,
   setAuthenticationFailureHandler,
@@ -140,4 +201,11 @@ export const api = {
   refresh: refreshAccessToken,
   logout: () => request<{ message: string }>("/auth/logout", { method: "POST" }, false),
   getCurrentUser: () => request<CurrentUserResponse>("/auth/me"),
+  listDatasets: (workspaceId: string) => request<Dataset[]>(`/datasets?workspace_id=${encodeURIComponent(workspaceId)}`),
+  createDataset: (payload: { workspace_id: string; name: string; description?: string; source?: string }) =>
+    request<Dataset>("/datasets", { method: "POST", body: JSON.stringify(payload) }),
+  getDataset: (datasetId: string) => request<Dataset>(`/datasets/${datasetId}`),
+  deleteDataset: (datasetId: string) => request<{ message: string }>(`/datasets/${datasetId}`, { method: "DELETE" }),
+  uploadDatasetCsv: (datasetId: string, file: File) => upload<UploadSummary>(`/datasets/${datasetId}/upload`, file),
+  listDatasetFeedback: (datasetId: string) => request<Feedback[]>(`/datasets/${datasetId}/feedback`),
 };
