@@ -3,7 +3,7 @@
 This document details the planned PostgreSQL database structure for VoxInsight. This design captures our core relational entities, fields, constraints, and relationships.
 
 > [!IMPORTANT]
-> **Status**: PLANNED. The schemas, relationships, and tables described here are concepts for the target relational storage model. No database files or migrations are created in this phase. The schema is subject to revision and refinement during the Phase 1 implementation.
+> **Status**: Phase 1 implements the `users`, `workspaces`, `user_workspaces`, and `refresh_sessions` tables through SQLAlchemy models and Alembic migration `001_initial_auth_schema`. PostgreSQL is implemented/configured; runtime integration verification remains pending because Docker is unavailable in the current environment. The remaining tables are planned for later phases.
 
 ---
 
@@ -62,6 +62,19 @@ Maps relationships between users and workspaces (roles, access rights).
 | `user_id` | UUID | FK (User.id), PK | Associated user ID |
 | `workspace_id` | UUID | FK (Workspace.id), PK | Associated workspace ID |
 | `role` | VARCHAR(50) | Not Null | Role inside workspace (e.g., admin, analyst) |
+
+### 2.3a RefreshSession (Implemented in Phase 1)
+Tracks server-side refresh-token sessions. Raw refresh tokens are never stored; a SHA-256 token hash is persisted instead.
+
+| Field | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary Key | Session identifier |
+| `user_id` | UUID | FK (User.id) | Session owner |
+| `token_hash` | VARCHAR(255) | Indexed, Not Null | Hash of the raw refresh JWT |
+| `expires_at` | TIMESTAMP | Not Null | Session expiration |
+| `revoked_at` | TIMESTAMP | Nullable | Set on logout or refresh rotation |
+| `created_at` | TIMESTAMP | Not Null | Session creation time |
+| `last_used_at` | TIMESTAMP | Nullable | Most recent token rotation time |
 
 ### 2.4 Dataset
 Tracks imported feedback collections.

@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f7fb;
+  --foreground: #162033;
+  --muted: #60708a;
+  --surface: #ffffff;
+  --border: #dfe5ef;
+  --brand: #3d4ee8;
+  --brand-dark: #2937bc;
+  --danger: #b42318;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button, input { font: inherit; }
+
+button {
+  border: 0;
+  border-radius: 0.55rem;
+  background: var(--brand);
+  color: white;
+  cursor: pointer;
+  font-weight: 650;
+  min-height: 2.7rem;
+  padding: 0.65rem 1rem;
+}
+
+button:hover:not(:disabled) { background: var(--brand-dark); }
+button:disabled { cursor: wait; opacity: 0.65; }
+a { color: var(--brand); font-weight: 650; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.centered-status, .auth-page {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.auth-card, .welcome-card, .workspace-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: 0 18px 45px rgb(37 52 80 / 8%);
+}
+
+.auth-card { max-width: 28rem; padding: 2.25rem; width: 100%; }
+.auth-card h1, .dashboard-header h1, .workspace-section h2, .welcome-card h2 { margin: 0.3rem 0; }
+.muted { color: var(--muted); line-height: 1.5; }
+.eyebrow { color: var(--brand); font-size: 0.78rem; font-weight: 750; letter-spacing: 0.1em; margin: 0; text-transform: uppercase; }
+
+.auth-form { display: grid; gap: 1rem; margin: 1.5rem 0; }
+.auth-form label { display: grid; font-size: 0.9rem; font-weight: 650; gap: 0.45rem; }
+.auth-form input {
+  background: #fff;
+  border: 1px solid #c8d1e0;
+  border-radius: 0.55rem;
+  color: var(--foreground);
+  min-height: 2.7rem;
+  padding: 0.65rem 0.75rem;
+}
+.auth-form input:focus { border-color: var(--brand); outline: 3px solid rgb(61 78 232 / 15%); }
+.form-error { background: #fff0ee; border-radius: 0.5rem; color: var(--danger); margin: 0; padding: 0.7rem; }
+
+.dashboard-page { margin: 0 auto; max-width: 68rem; min-height: 100vh; padding: 2.5rem 1.5rem; width: 100%; }
+.dashboard-header { align-items: center; display: flex; justify-content: space-between; margin-bottom: 2rem; }
+.secondary-button { background: transparent; border: 1px solid #b8c3d4; color: var(--foreground); }
+.secondary-button:hover:not(:disabled) { background: #e9edf5; }
+.welcome-card { padding: 1.5rem; }
+.welcome-card p { margin: 0.2rem 0; }
+.workspace-section { margin-top: 1.5rem; padding: 1.5rem; }
+.personal-note { background: #eef0ff; border-radius: 0.5rem; color: #313d9b; margin: 1.25rem 0 0; padding: 0.75rem; }
+.workspace-list { display: grid; gap: 0.75rem; list-style: none; margin: 1rem 0 0; padding: 0; }
+.workspace-list li { align-items: center; border: 1px solid var(--border); border-radius: 0.65rem; display: flex; justify-content: space-between; padding: 1rem; }
+.workspace-list strong, .workspace-list span { display: block; }
+.workspace-list li div span { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; }
+.role-badge { background: #edf1f8; border-radius: 999px; color: #46526a; font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.6rem; text-transform: capitalize; }
+
+@media (max-width: 40rem) {
+  .auth-card { padding: 1.5rem; }
+  .dashboard-page { padding: 1.5rem 1rem; }
+  .dashboard-header { align-items: flex-start; gap: 1rem; }
+}

@@ -3,7 +3,7 @@
 This document specifies the planned REST API interface for VoxInsight. The API communicates via JSON request and response bodies.
 
 > [!IMPORTANT]
-> **Status**: PLANNED. No endpoints or routers are implemented in this phase. The following schema represents the intended structure for the application backend services starting in Phase 1.
+> **Status**: Phase 1 authentication, health, and workspace routes are implemented. The remaining modules below are planned for later phases.
 
 ---
 
@@ -60,6 +60,13 @@ Handles secure registration, logins, token refresh cycles, and logout.
   - Description: Renew an expired access token using a refresh token.
 * **POST `/auth/logout`**
   - Description: Invalidate the current session token.
+
+Implemented behavior: registration automatically creates a Personal workspace; login and registration return a short-lived access token and set an httpOnly refresh cookie. Refresh tokens are rotated on `/auth/refresh` and revoked on `/auth/logout`. `GET /auth/me` returns the authenticated user and workspace memberships.
+
+### 2.1a Workspace Module (`/api/v1/workspaces`)
+* **GET `/workspaces`** — List authenticated user's workspaces.
+* **POST `/workspaces`** — Create a workspace owned by the authenticated user.
+* **GET `/workspaces/{workspace_id}`** — Get workspace details when the caller has a membership.
 
 ### 2.2 Users Module (`/api/v1/users`)
 Profile management and settings under active workspace boundaries.

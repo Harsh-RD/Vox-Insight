@@ -16,7 +16,7 @@ This file documents the key technical and design decisions for VoxInsight to pro
 * **Decision**: Use FastAPI as the core Python backend web framework.
 * **Reason**: FastAPI provides automatic API documentation (Swagger/OpenAPI), native support for asynchronous requests (`async/await`), high performance comparable to Node.js/Go, and native request validation via Pydantic. Flask lacks built-in async and validation; Django is too heavy and opinionated, whereas FastAPI is ideal for building lightweight, modular REST APIs alongside heavy NLP compute blocks.
 * **Date**: 2026-08-13
-* **Status**: ACCEPTED (Planned - Phase 1)
+* **Status**: IMPLEMENTED (Phase 1)
 
 ---
 
@@ -25,7 +25,7 @@ This file documents the key technical and design decisions for VoxInsight to pro
 * **Decision**: Use PostgreSQL for structured relational data.
 * **Reason**: Relational data structures are necessary for tracking Users, Workspaces, Datasets, Feedback, and analysis records with strict relational integrity, foreign key constraints, and robust ACID properties. PostgreSQL is chosen for its scalability, rich JSONB features, and seamless integration with Python via SQLAlchemy and Alembic.
 * **Date**: 2026-08-13
-* **Status**: ACCEPTED (Planned - Phase 1)
+* **Status**: IMPLEMENTED/CONFIGURED (Phase 1). Runtime integration verification remains pending because Docker is unavailable in the current environment.
 
 ---
 
@@ -52,7 +52,7 @@ This file documents the key technical and design decisions for VoxInsight to pro
 * **Decision**: Build the web-based analytics dashboard using Next.js (App Router), TypeScript, and Tailwind CSS.
 * **Reason**: Next.js provides modern React utilities (server components, routing, optimized rendering), TypeScript enforces compile-time type safety for complex analytical data representations, and Tailwind CSS allows rapid, responsive, and beautiful styling aligned with premium design guidelines.
 * **Date**: 2026-08-13
-* **Status**: ACCEPTED (Planned - Phase 1)
+* **Status**: IMPLEMENTED (Phase 1)
 
 ---
 
@@ -61,7 +61,7 @@ This file documents the key technical and design decisions for VoxInsight to pro
 * **Decision**: Enforce standard REST endpoints using JSON payloads for communication between Next.js and FastAPI.
 * **Reason**: Keeps a strict separation of concerns between client and server. It allows the backend to be independently testable via standard REST clients (and API schemas), simplifies mock testing, and ensures that the frontend never directly executes database operations or NLP computations.
 * **Date**: 2026-08-13
-* **Status**: ACCEPTED (Planned - Phase 1)
+* **Status**: IMPLEMENTED (Phase 1)
 
 ---
 

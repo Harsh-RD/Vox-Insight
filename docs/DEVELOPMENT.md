@@ -9,10 +9,10 @@ This document is the persistent development-state record for the VoxInsight plat
 
 ## Current Status
 
-* **Current Phase**: Phase 0 — Repository and Architecture Foundation
-* **Current Milestone**: Establish project architecture and development conventions
-* **Status**: In Progress (Documentation baseline creation)
-* **Last Verified**: 2026-08-13 (Documentation structure and initial layout)
+* **Current Phase**: Phase 1 — Application foundation, PostgreSQL, authentication, and workspace foundation
+* **Current Milestone**: Frontend authentication shell and backend authentication foundation
+* **Status**: In Progress (PostgreSQL runtime verification pending)
+* **Last Verified**: 2026-08-13 (backend unit tests; frontend type, lint, and production build checks)
 
 ---
 
@@ -21,34 +21,30 @@ This document is the persistent development-state record for the VoxInsight plat
 ### Completed
 - [x] Git repository created and initialized.
 - [x] Persistent AI agent instruction manual established (`AGENTS.md`).
+- [x] FastAPI application foundation with versioned health, auth, and workspace routes.
+- [x] SQLAlchemy models and Alembic migration for users, workspaces, memberships, and refresh sessions.
+- [x] Argon2id password hashing, typed JWT access/refresh tokens, server-side refresh-session rotation and revocation.
+- [x] Automatic Personal workspace creation during registration and workspace membership enforcement.
+- [x] Next.js + TypeScript + Tailwind frontend foundation with login, registration, session restoration, protected dashboard, and logout.
+- [x] Backend SQLite unit tests covering health, authentication, refresh rotation/revocation, and workspaces.
 
 ### In Progress
-- [/] Creating project architecture and development convention documentation in `docs/`:
-  - `DEVELOPMENT.md` (State tracker)
-  - `DECISIONS.md` (Architectural decision records)
-  - `ARCHITECTURE.md` (System architectural design)
-  - `DATABASE.md` (Database models and relations design)
-  - `API.md` (REST API paths and responses design)
-  - `NLP_PIPELINE.md` (Multilingual and Hinglish NLP model pipelines design)
-  - `RAG.md` (Retrieval architecture and LLM assistant flow design)
-- [/] Updating root `README.md` with professional introduction, roadmap, and capabilities.
+- [/] PostgreSQL runtime migration and connectivity verification using Docker Compose.
+- [/] Commit the existing Phase 1 implementation once reviewed.
 
 ### Blocked
-- None.
+- PostgreSQL runtime verification — Docker is unavailable in the current environment.
 
 ### Known Issues
-- None yet.
+- Backend unit tests use SQLite in memory; they do not verify PostgreSQL-specific runtime behavior.
+- Access and refresh tokens are deliberately not persisted in browser storage; a page load restores access through the httpOnly refresh cookie.
 
 ---
 
 ## Roadmap & Next Steps
 
 ### Next Task
-Implement the actual application foundation (Phase 1):
-- Initialize backend project (FastAPI directory structure, Pydantic configuration, basic routes, pytest integration).
-- Initialize frontend project (Next.js with TypeScript and Tailwind CSS).
-- Set up PostgreSQL connection, SQLAlchemy base models, and Alembic configuration.
-- Implement user authentication models and JWT endpoints.
+Verify the Alembic migration and backend against a running PostgreSQL container, then commit the completed Phase 1 foundation. Begin Phase 2 ingestion only after that verification is recorded.
 
 ### Future Development Phases
 - **Phase 0**: Repository and architecture foundation
