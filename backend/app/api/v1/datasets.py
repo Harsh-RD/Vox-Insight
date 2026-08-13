@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.dataset import DatasetCreate, DatasetResponse
 from app.schemas.feedback import FeedbackResponse
 from app.services import dataset as dataset_service
+from app.services import analysis as analysis_service
 
 router = APIRouter(prefix="/datasets", tags=["Datasets"])
 
@@ -64,3 +65,15 @@ def upload(dataset_id: uuid.UUID, file: UploadFile = File(...), current_user: Us
 def feedback(dataset_id: uuid.UUID, limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     dataset = dataset_service.get_dataset_for_user(db, dataset_id, current_user.id)
     return {"success": True, "data": [feedback_response(item) for item in dataset_service.list_feedback(db, dataset, limit, offset)]}
+
+
+@router.post("/{dataset_id}/analyze", status_code=status.HTTP_200_OK)
+def analyze_dataset(dataset_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    result = analysis_service.analyze_dataset(db, dataset_id=dataset_id, user_id=current_user.id)
+    return {"success": True, "data": result}
+
+
+@router.get("/{dataset_id}/analysis-status")
+def get_dataset_status(dataset_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    status_payload = analysis_service.get_dataset_analysis_status(db, dataset_id, current_user.id)
+    return {"success": True, "data": status_payload}

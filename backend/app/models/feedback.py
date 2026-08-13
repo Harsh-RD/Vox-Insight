@@ -2,10 +2,15 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
+
+if TYPE_CHECKING:
+    from app.models.analysis_result import AnalysisResult
 
 
 class Feedback(Base):
@@ -24,3 +29,4 @@ class Feedback(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     dataset = relationship("Dataset", back_populates="feedback_items")
+    analysis_result: Mapped["AnalysisResult"] = relationship("AnalysisResult", back_populates="feedback", uselist=False, cascade="all, delete-orphan")

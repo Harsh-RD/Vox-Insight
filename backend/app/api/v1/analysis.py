@@ -1,31 +1,26 @@
 import uuid
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.api.v1.datasets import feedback_response
 from app.database.session import get_db
 from app.models.user import User
-from app.services.dataset import get_feedback_for_user
-from app.services import analysis as analysis_service
+from app.services.analysis import analyze_dataset, analyze_feedback, get_analysis_for_feedback, get_dataset_analysis_status
 
-router = APIRouter(prefix="/feedback", tags=["Feedback"])
-
-
-@router.get("/{feedback_id}")
-def get(feedback_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return {"success": True, "data": feedback_response(get_feedback_for_user(db, feedback_id, current_user.id))}
+feedback_analysis_router = APIRouter(prefix="/feedback", tags=["Feedback Analysis"])
+dataset_analysis_router = APIRouter(prefix="/datasets", tags=["Dataset Analysis"])
 
 
-@router.post("/{feedback_id}/analyze", status_code=status.HTTP_200_OK)
-def analyze_feedback(feedback_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    result = analysis_service.analyze_feedback(db, feedback_id=feedback_id, user_id=current_user.id)
+@feedback_analysis_router.post("/{feedback_id}/analyze", status_code=status.HTTP_200_OK)
+def analyze_single_feedback(feedback_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    result = analyze_feedback(db, feedback_id=feedback_id, user_id=current_user.id)
     return {"success": True, "data": result}
 
 
-@router.get("/{feedback_id}/analysis")
+@feedback_analysis_router.get("/{feedback_id}/analysis")
 def get_feedback_analysis(feedback_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    analysis = analysis_service.get_analysis_for_feedback(db, feedback_id, current_user.id)
+    analysis = get_analysis_for_feedback(db, feedback_id, current_user.id)
     return {"success": True, "data": {
         "feedback_id": str(feedback_id),
         "analysis": {
@@ -59,3 +54,15 @@ def get_feedback_analysis(feedback_id: uuid.UUID, current_user: User = Depends(g
             } for item in analysis.aspects],
         },
     }}
+
+
+@dataset_analysis_router.post("/{dataset_id}/analyze", status_code=status.HTTP_200_OK)
+def analyze_dataset_feedback(dataset_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    result = analyze_dataset(db, dataset_id=dataset_id, user_id=current_user.id)
+    return {"success": True, "data": result}
+
+
+@dataset_analysis_router.get("/{dataset_id}/analysis-status")
+def get_dataset_status(dataset_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    status_payload = get_dataset_analysis_status(db, dataset_id, current_user.id)
+    return {"success": True, "data": status_payload}
