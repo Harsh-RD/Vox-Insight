@@ -80,3 +80,12 @@ This file documents the key technical and design decisions for VoxInsight to pro
 * **Reason**: Keeping the workspace boundary directly on feedback prevents cross-tenant access when identifiers are guessed and provides a stable data foundation before NLP processing begins. CSV imports preserve duplicate source rows and report invalid rows rather than silently changing customer data.
 * **Date**: 2026-08-13
 * **Status**: IMPLEMENTED (Phase 2)
+
+---
+
+## 9. Dataset-scoped FAISS indexes with PostgreSQL metadata
+
+* **Decision**: Persist one FAISS `IndexFlatIP` index per workspace/dataset, with a JSON positional mapping beside it and a `vector_indexes` PostgreSQL metadata table.
+* **Reason**: A physically dataset-scoped index prevents accidental cross-workspace candidate retrieval and supports reliable rebuilds. The mapping contains only vector-position-to-Feedback UUID information; PostgreSQL remains authoritative for feedback, dataset, and authorization metadata. Unit-normalized embeddings make `IndexFlatIP` scores cosine similarities.
+* **Date**: 2026-08-30
+* **Status**: IMPLEMENTED (Phase 4)

@@ -66,3 +66,9 @@ graph TD
 
 ### Step 7: Grounded Response Generation
 - **Action**: Receive the raw text output from the LLM, format citations, and stream the generated response to the frontend client. The system returns the generated markdown text alongside the array of source Feedback IDs used to construct the answer, allowing users to inspect the source customer reviews.
+
+---
+
+## Phase 4 retrieval foundation
+
+Phase 4 implements only steps 1–3 as a reusable semantic retrieval foundation: normalized 384-dimensional multilingual embeddings, persisted workspace/dataset-scoped FAISS indexes, positional UUID mapping, and authorized Feedback resolution. It does not implement context construction, prompts, LLM providers, chat sessions, answer generation, or citations. Those remain Phase 5 work.

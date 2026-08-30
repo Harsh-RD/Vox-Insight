@@ -189,3 +189,17 @@ To maintain database performance and modularity, we do not store heavy embedding
 - When a `Feedback` record is ingested and preprocessed, its textual value is processed by the embedding pipeline, producing a high-dimensional vector.
 - This vector is written directly to the **FAISS Vector Index**, mapping the vector's positional offset (e.g., row index `1409`) to the database UUID of the corresponding `Feedback` record.
 - Vector retrieval returns a list of integer offsets, which are translated using an ID mapping catalog to query PostgreSQL for the associated `Feedback` and `AnalysisResult` data.
+
+### 3.1 VectorIndex (Implemented in Phase 4)
+
+`vector_indexes` stores lifecycle metadata only; no embedding values are stored in PostgreSQL.
+
+| Field | Description |
+|---|---|
+| `workspace_id`, `dataset_id` | Workspace/dataset ownership boundary; unique together |
+| `index_type` | `IndexFlatIP` |
+| `embedding_model`, `embedding_dimension` | Reproducibility metadata (`paraphrase-multilingual-MiniLM-L12-v2`, 384) |
+| `indexed_count`, `status` | Index lifecycle state: pending, indexing, completed, failed |
+| `last_indexed_at`, `error_message` | Operational status details |
+
+The on-disk mapping JSON maps FAISS ordinal positions to Feedback UUIDs. Search re-reads real Feedback records scoped to the authorized workspace, so cascaded/deleted records are never exposed even before a subsequent rebuild.

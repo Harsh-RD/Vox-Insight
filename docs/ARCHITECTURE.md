@@ -132,3 +132,13 @@ The data moves through the platform in a linear, structured pipeline:
 Since document ingestion, large NLP classification runs, and FAISS index rebuilds are computationally expensive, synchronous request-response loops will block.
 - **Short term**: FastAPI `BackgroundTasks` will run low-latency asynchronous preprocessing.
 - **Production phase**: A dedicated asynchronous task worker queue (e.g., Celery + Redis) will offload heavy model calculations and vector indexing from the primary web application threads.
+
+---
+
+## 6. Phase 4 retrieval implementation
+
+The retrieval service uses `paraphrase-multilingual-MiniLM-L12-v2` through Sentence Transformers. It loads once on first use, encodes batches on CPU, and emits 384-dimensional unit vectors. FAISS `IndexFlatIP` operates on those vectors, so each returned inner-product score is cosine similarity.
+
+Indexes live at `backend/data/faiss/<workspace UUID>/<dataset UUID>/index.faiss` with an adjacent `mapping.json`. Path components are generated only from validated database UUIDs. Search first checks membership, queries only completed index metadata for that workspace, then resolves candidate Feedback IDs back through a workspace-scoped PostgreSQL query. This makes database state authoritative and suppresses stale vectors after deletion. Phase 4 does not build prompts, call an LLM, or generate answers.
+
+If persisted index files are missing or corrupt, the service marks their metadata `failed` and returns a controlled retrieval error rather than silently serving partial results.

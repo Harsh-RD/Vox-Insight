@@ -75,3 +75,9 @@ graph TD
 ### Step 10: Trend & Clustering Analysis (Downstream Offline Process)
 - **Purpose**: Cluster similar complaints and issues together over time to identify emerging user pain points automatically.
 - **Target Approach**: Uses sentence embeddings to cluster feedback records using algorithms like HDBSCAN or K-Means, logging cluster labels in the database.
+
+---
+
+## Phase 4 embedding implementation
+
+Retrieval is implemented separately from the analytical NLP classifiers. It chooses `AnalysisResult.normalized_text` when available and non-empty, otherwise retains and embeds `Feedback.original_text` without modifying it. `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` produces 384-dimensional multilingual sentence embeddings for English and Hindi; it can encode Romanized Hinglish but has no Hinglish-specific fine-tuning, so spelling/code-mixing variation remains a quality limitation. The compact MiniLM checkpoint was selected for practical local CPU use rather than a larger transformer. It is loaded once, batch-encoded on CPU, and requires an initial model download/cache in a connected production/development environment; actual memory use and indexing latency vary with hardware and input length.

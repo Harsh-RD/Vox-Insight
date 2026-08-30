@@ -19,6 +19,9 @@ dependencies = [
     "PyJWT>=2.9",
     "pwdlib[argon2]>=0.2",
     "python-multipart>=0.0.9",
+    "numpy>=1.26",
+    "faiss-cpu>=1.8",
+    "sentence-transformers>=3.0",
 ]
 
 [project.optional-dependencies]
@@ -31,3 +34,4 @@ test = [
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
+addopts = "--basetemp=.pytest_temp"

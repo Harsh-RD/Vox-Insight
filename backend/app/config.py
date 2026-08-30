@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # CORS
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Semantic retrieval
+    EMBEDDING_MODEL: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    EMBEDDING_DIMENSION: int = 384
+    EMBEDDING_BATCH_SIZE: int = 32
+    FAISS_INDEX_DIR: Path = PROJECT_ROOT / "data" / "faiss"
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",

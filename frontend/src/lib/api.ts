@@ -76,6 +76,28 @@ export type UploadSummary = {
   invalid_rows: Array<{ row: number; reason: string }>;
 };
 
+export type VectorIndexStatus = {
+  dataset_id: string;
+  workspace_id: string;
+  status: "pending" | "indexing" | "completed" | "failed";
+  indexed_count: number;
+  embedding_model: string;
+  embedding_dimension: number;
+  index_type: string;
+  last_indexed_at: string | null;
+  error_message: string | null;
+};
+
+export type SemanticSearchResult = {
+  feedback_id: string;
+  dataset_id: string;
+  workspace_id: string;
+  text: string;
+  language: string | null;
+  rating: number | null;
+  similarity_score: number;
+};
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -208,4 +230,7 @@ export const api = {
   deleteDataset: (datasetId: string) => request<{ message: string }>(`/datasets/${datasetId}`, { method: "DELETE" }),
   uploadDatasetCsv: (datasetId: string, file: File) => upload<UploadSummary>(`/datasets/${datasetId}/upload`, file),
   listDatasetFeedback: (datasetId: string) => request<Feedback[]>(`/datasets/${datasetId}/feedback`),
+  buildDatasetIndex: (datasetId: string) => request<VectorIndexStatus>(`/datasets/${datasetId}/index`, { method: "POST" }),
+  getDatasetIndexStatus: (datasetId: string) => request<VectorIndexStatus>(`/datasets/${datasetId}/index-status`),
+  semanticSearch: (payload: { workspace_id: string; query: string; top_k: number; dataset_id?: string }) => request<{ workspace_id: string; query: string; results: SemanticSearchResult[] }>("/search", { method: "POST", body: JSON.stringify(payload) }),
 };

@@ -3,8 +3,8 @@
 VoxInsight is a full-stack SaaS platform designed to ingest, process, and analyze multilingual and code-mixed customer feedback (such as English, Hindi, and Romanized Hinglish) and translate it into actionable business intelligence.
 
 > [!IMPORTANT]
-> **Project Status**: Phase 2 — Feedback/data ingestion.
-> Workspace-isolated datasets, feedback records, CSV ingestion, and the dataset-management UI are implemented. PostgreSQL runtime integration verification remains pending because Docker is unavailable in the current environment.
+> **Project Status**: Phase 4 — Semantic embeddings and FAISS retrieval.
+> Workspace-isolated datasets, NLP analysis, persistent semantic retrieval, and the minimal search UI are implemented. PostgreSQL runtime integration verification remains pending because Docker is unavailable in the current environment.
 
 ---
 
@@ -71,9 +71,17 @@ voxinsight/
 - **Phase 0**: Repository and architecture foundation *(completed)*
 - **Phase 1**: Application foundation, PostgreSQL, and authentication *(completed; PostgreSQL runtime verification pending)*
 - **Phase 2**: Dataset and feedback ingestion *(implemented; PostgreSQL runtime verification pending)*
-- **Phase 3**: Multilingual preprocessing and NLP pipeline
-- **Phase 4**: Embeddings and FAISS semantic retrieval
+- **Phase 3**: Multilingual preprocessing and NLP pipeline *(completed)*
+- **Phase 4**: Embeddings and FAISS semantic retrieval *(implemented; PostgreSQL runtime verification pending)*
 - **Phase 5**: RAG and AI Assistant
 - **Phase 6**: Analytics dashboard
 - **Phase 7**: Competitor analysis and alerts
 - **Phase 8**: Testing, security, deployment, and production hardening
+
+---
+
+## Phase 4: Semantic retrieval
+
+Phase 4 adds local semantic feedback retrieval, not RAG or answer generation. Feedback is embedded with `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dimensions) using lazy, CPU-only singleton loading and batch encoding. Vectors are unit-normalized and stored in FAISS `IndexFlatIP` indexes, where inner product is cosine similarity.
+
+Each dataset has its own index below `backend/data/faiss/<workspace UUID>/<dataset UUID>/`. A persistent JSON mapping translates FAISS positions to Feedback UUIDs; PostgreSQL remains the source of text and business metadata. Search authorizes workspace membership before any index is selected and resolves results from authorized database rows, so stale/deleted feedback is never returned. Generated indexes and model assets are ignored by Git.

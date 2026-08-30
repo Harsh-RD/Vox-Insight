@@ -9,12 +9,28 @@ This document is the persistent development-state record for the VoxInsight plat
 
 ## Current Status
 
-* **Current Phase**: Phase 3 — Multilingual NLP Analysis
-* **Current Milestone**: Modular NLP pipeline with analysis persistence and async route handling
+* **Current Phase**: Phase 4 — Semantic Embeddings + FAISS Retrieval
+* **Current Milestone**: Persistent workspace-isolated semantic retrieval
 * **Status**: Implemented and verified
-* **Last Verified**: 2026-08-13 (39 backend tests all passing; frontend TypeScript, lint, and production build successful)
+* **Last Verified**: 2026-08-31 (49 backend tests passed; frontend TypeScript, lint, and production build passed; PostgreSQL/Docker runtime verification pending)
 
 ---
+
+## Phase 4 Completion Update (2026-08-30)
+
+* **Current Phase**: Phase 4 — Semantic Embeddings + FAISS Retrieval
+* **Current Milestone**: Persistent workspace-isolated semantic retrieval
+* **Status**: Audited and verified (49 backend tests; frontend type check, lint, and production build).
+* **Next Task**: Phase 5 RAG and AI Assistant. Phase 4 deliberately contains retrieval only—no prompts, LLM calls, chat sessions, or answer generation.
+
+- [x] Lazy, thread-safe Sentence Transformers registry using `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dimensions), batch encoding, and unit normalization.
+- [x] Dataset-scoped FAISS `IndexFlatIP` indexes and JSON FAISS-position-to-Feedback UUID mappings persisted under `backend/data/faiss/`.
+- [x] Additive migration `004_vector_index_metadata` with pending/indexing/completed/failed lifecycle metadata.
+- [x] Build/rebuild, incremental-add, status, and workspace-authorized semantic-search APIs; stale/deleted feedback is suppressed during database result resolution.
+- [x] Minimal authenticated semantic-search UI and deterministic retrieval tests that mock embedding inference without any model downloads.
+- [x] Audit hardening: FAISS normalizes vectors at the persistence boundary; corrupt or missing persisted indexes are marked failed and return `503 INDEX_UNAVAILABLE` rather than being silently skipped.
+
+**Verification note:** Backend test suite (49 passed), frontend TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), and production build (`npm run build`) are verified. PostgreSQL runtime migration verification remains pending because Docker is unavailable in this environment.
 
 ## State Breakdown
 
@@ -58,7 +74,7 @@ This document is the persistent development-state record for the VoxInsight plat
 ## Roadmap & Next Steps
 
 ### Next Task
-Begin Phase 4: Embeddings and FAISS semantic retrieval. This phase will enable semantic search capabilities by generating dense embeddings for feedback text and building a FAISS vector index for efficient similarity search and retrieval-augmented generation (RAG) support.
+Begin Phase 5: RAG and AI Assistant. Phase 4 supplies retrieval only; prompt construction, LLM calls, chat sessions, and generated answers are intentionally not implemented.
 
 ### Phase 3 Summary
 Phase 3 delivers a complete, production-ready multilingual NLP pipeline. The architecture is modular, deterministically testable, and free of side effects—real inference happens only in production, while tests use deterministic fallbacks and seams. Model caching is thread-safe and prevents expensive repeated downloads. Analysis is workspace-scoped, status-tracked, and supports both single-feedback and bulk-dataset processing. All 39 backend unit tests pass; frontend type checking, linting, and production build all pass.

@@ -6,5 +6,6 @@ from app.models.dataset import Dataset
 from app.models.feedback import Feedback
 from app.models.analysis_result import AnalysisResult
 from app.models.aspect_analysis import AspectAnalysis
+from app.models.vector_index import VectorIndex
 
-__all__ = ["User", "Workspace", "UserWorkspace", "RefreshSession", "Dataset", "Feedback", "AnalysisResult", "AspectAnalysis"]
+__all__ = ["User", "Workspace", "UserWorkspace", "RefreshSession", "Dataset", "Feedback", "AnalysisResult", "AspectAnalysis", "VectorIndex"]

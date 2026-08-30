@@ -124,6 +124,16 @@ Semantic search endpoint querying FAISS.
   - Payload: `{ "query": "long login time", "limit": 10 }`
   - Response: List of feedback items matching target query with vector distance scores.
 
+#### Implemented Phase 4 retrieval routes
+
+* **POST `/datasets/{dataset_id}/index`** — Build or rebuild that authorized dataset's FAISS index.
+* **POST `/datasets/{dataset_id}/index/add`** — Add feedback absent from its persisted mapping; an existing completed index is required.
+* **GET `/datasets/{dataset_id}/index-status`** — Returns lifecycle status, indexed count, model, dimension, timestamp, and error details.
+* **POST `/search`** — Semantic search. Payload: `{ "workspace_id": "UUID", "query": "payment issue", "top_k": 10, "dataset_id": "optional UUID" }`. Membership is verified against `workspace_id`; results include feedback, dataset, workspace, language/rating, and cosine-similarity score.
+
+Search has no arbitrary score threshold. `top_k` is constrained to 1–100.
+If an index file or mapping is missing or corrupt, search marks that dataset index as `failed` and returns `503 INDEX_UNAVAILABLE`; rebuild it before retrying.
+
 ### 2.8 Chat Module (`/api/v1/chat`)
 RAG dialogue endpoints.
 

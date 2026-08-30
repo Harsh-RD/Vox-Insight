@@ -25,6 +25,7 @@ function DashboardContent() {
         </div>
         <div className="header-actions">
           <Link className="secondary-link" href="/datasets">Datasets</Link>
+          <Link className="secondary-link" href="/search">Semantic search</Link>
           <button className="secondary-button" type="button" onClick={handleLogout}>Sign out</button>
         </div>
       </header>
