@@ -1,0 +1,24 @@
+"use client";
+
+import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
+import { AuthGuard } from "@/components/auth-guard";
+import { useAuth } from "@/components/auth-provider";
+import { api, ApiError, type ChatMessage, type Conversation, type Dataset, type Evidence } from "@/lib/api";
+
+type DisplayMessage = ChatMessage & { evidence?: Evidence[] };
+
+function ChatContent() {
+  const { workspaces } = useAuth();
+  const [workspaceId, setWorkspaceId] = useState(""); const [datasetId, setDatasetId] = useState("");
+  const [datasets, setDatasets] = useState<Dataset[]>([]); const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversationId, setConversationId] = useState(""); const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [content, setContent] = useState(""); const [error, setError] = useState<string | null>(null); const [loading, setLoading] = useState(false);
+  const selectedWorkspace = workspaceId || workspaces[0]?.id || "";
+  useEffect(() => { if (!selectedWorkspace) return; void Promise.all([api.listDatasets(selectedWorkspace), api.listConversations(selectedWorkspace)]).then(([ds, cs]) => { setDatasets(ds); setConversations(cs); }).catch(() => setError("Could not load chat data.")); }, [selectedWorkspace]);
+  async function newConversation() { try { const item = await api.createConversation({ workspace_id: selectedWorkspace }); setConversations((old) => [item, ...old]); setConversationId(item.id); setMessages([]); } catch { setError("Could not create a conversation."); } }
+  async function choose(id: string) { try { const item = await api.getConversation(id); setConversationId(id); setMessages(item.messages); } catch { setError("Could not open this conversation."); } }
+  async function submit(event: FormEvent) { event.preventDefault(); if (!content.trim() || !conversationId) return; setLoading(true); setError(null); const question = content; setContent(""); setMessages((old) => [...old, { id: "pending", conversation_id: conversationId, role: "user", content: question, provider: null, model: null, created_at: new Date().toISOString() }]); try { const result = await api.sendMessage(conversationId, { content: question, ...(datasetId ? { dataset_id: datasetId } : {}) }); setMessages((old) => [...old.filter((m) => m.id !== "pending"), { ...result.message, content: result.answer, evidence: result.evidence }]); } catch (caught) { setMessages((old) => old.filter((m) => m.id !== "pending")); setError(caught instanceof ApiError ? caught.message : "The assistant could not respond."); } finally { setLoading(false); } }
+  return <main className="dashboard-page"><header className="dashboard-header"><div><p className="eyebrow">VoxInsight</p><h1>Grounded assistant</h1></div><Link className="secondary-link" href="/dashboard">Workspace</Link></header><section className="workspace-section chat-controls"><select value={selectedWorkspace} onChange={(e) => { setWorkspaceId(e.target.value); setConversationId(""); setMessages([]); }} aria-label="Workspace">{workspaces.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select><select value={datasetId} onChange={(e) => setDatasetId(e.target.value)} aria-label="Dataset"><option value="">All workspace datasets</option>{datasets.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select><button type="button" onClick={newConversation} disabled={!selectedWorkspace}>New conversation</button></section><div className="chat-layout"><aside className="workspace-section"><h2>Conversations</h2>{conversations.map((c) => <button className="conversation-button" key={c.id} onClick={() => void choose(c.id)}>{c.title}</button>)}</aside><section className="workspace-section chat-panel">{!conversationId ? <p className="muted">Start a conversation to ask about indexed feedback.</p> : <><div className="messages">{messages.map((m) => <article className={`chat-message ${m.role}`} key={m.id}><strong>{m.role === "user" ? "You" : "Assistant"}</strong><p>{m.content}</p>{m.evidence && <details><summary>Evidence ({m.evidence.length})</summary>{m.evidence.map((e) => <div className="evidence" key={e.feedback_id}><small>Feedback {e.feedback_id} · similarity {e.similarity_score.toFixed(3)}</small><p>{e.text}</p></div>)}</details>}</article>)}{loading && <p className="muted">Grounding answer in retrieved feedback…</p>}</div><form className="chat-form" onSubmit={submit}><textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Ask a business question about customer feedback" required /><button disabled={loading}>{loading ? "Thinking..." : "Send"}</button></form></>}</section></div>{error && <p className="form-error" role="alert">{error}</p>}</main>;
+}
+export default function ChatPage() { return <AuthGuard><ChatContent /></AuthGuard>; }

@@ -162,3 +162,8 @@ Competitor analytics ingest.
   - Description: Retrieve comparison scores for competitor reviews against owned datasets.
 * **POST `/competitors/upload`**
   - Description: Ingest competitor feedback dataset files.
+## Implemented Phase 5 Conversations API
+
+* `POST /conversations` — `{ workspace_id, title? }`.
+* `GET /conversations?workspace_id=UUID`, `GET /conversations/{id}`, and `DELETE /conversations/{id}` — all require ownership and workspace membership.
+* `POST /conversations/{id}/messages` — `{ content, dataset_id? }`; returns `message`, grounded `answer`, actual retrieved `evidence[]`, and retrieval metadata.

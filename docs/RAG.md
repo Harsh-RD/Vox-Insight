@@ -71,4 +71,13 @@ graph TD
 
 ## Phase 4 retrieval foundation
 
-Phase 4 implements only steps 1–3 as a reusable semantic retrieval foundation: normalized 384-dimensional multilingual embeddings, persisted workspace/dataset-scoped FAISS indexes, positional UUID mapping, and authorized Feedback resolution. It does not implement context construction, prompts, LLM providers, chat sessions, answer generation, or citations. Those remain Phase 5 work.
+Phase 4 implements steps 1–3 as a reusable semantic retrieval foundation: normalized 384-dimensional multilingual embeddings, persisted workspace/dataset-scoped FAISS indexes, positional UUID mapping, and authorized Feedback resolution. Phase 5 adds context construction, prompts, provider calls, chat sessions, answer generation, and citations as described below.
+## Phase 5 implementation status
+
+**IMPLEMENTED:** `POST /conversations/{id}/messages` verifies conversation ownership and workspace membership, then reuses Phase 4 `semantic_search` for embeddings, FAISS retrieval, and PostgreSQL-authorized feedback resolution. Optional datasets are separately authorized. Context is bounded by `RAG_TOP_K`, `RAG_MAX_CONTEXT_ITEMS`, `RAG_MAX_CONTEXT_CHARS`, and `RAG_MAX_HISTORY_MESSAGES`.
+
+**SECURITY:** Retrieved feedback is untrusted, delimited data. The prompt forbids following feedback instructions, prompt disclosure, fabrication, and unsupported claims. Empty/below-threshold (`RAG_MIN_SIMILARITY`) retrieval returns controlled insufficient evidence without calling the LLM; the provider has no database or SQL access.
+
+**PROVIDER:** OpenAI Chat Completions (`gpt-4o-mini` default) via a replaceable `LLMProvider`, configured by `LLM_API_KEY`, `LLM_MODEL`, and optional `LLM_BASE_URL`. Provider costs depend on bounded prompt size and current pricing. Timeout, rate-limit, malformed-response, configuration, and availability failures are controlled errors and do not persist incomplete assistant messages.
+
+**UNKNOWN:** Live OpenAI and PostgreSQL runtime verification in this environment. **PLANNED:** no further provider is currently selected.

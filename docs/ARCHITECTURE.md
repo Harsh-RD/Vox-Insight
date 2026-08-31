@@ -142,3 +142,6 @@ The retrieval service uses `paraphrase-multilingual-MiniLM-L12-v2` through Sente
 Indexes live at `backend/data/faiss/<workspace UUID>/<dataset UUID>/index.faiss` with an adjacent `mapping.json`. Path components are generated only from validated database UUIDs. Search first checks membership, queries only completed index metadata for that workspace, then resolves candidate Feedback IDs back through a workspace-scoped PostgreSQL query. This makes database state authoritative and suppresses stale vectors after deletion. Phase 4 does not build prompts, call an LLM, or generate answers.
 
 If persisted index files are missing or corrupt, the service marks their metadata `failed` and returns a controlled retrieval error rather than silently serving partial results.
+## Phase 5 RAG layer
+
+The RAG service is a backend-only orchestration layer over Phase 4 search. It authorizes conversations and datasets, builds bounded evidence context, calls the provider abstraction, and persists only normalized message/evidence records. The frontend consumes the conversations API and cannot access FAISS or provider credentials.

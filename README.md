@@ -73,7 +73,7 @@ voxinsight/
 - **Phase 2**: Dataset and feedback ingestion *(implemented; PostgreSQL runtime verification pending)*
 - **Phase 3**: Multilingual preprocessing and NLP pipeline *(completed)*
 - **Phase 4**: Embeddings and FAISS semantic retrieval *(implemented; PostgreSQL runtime verification pending)*
-- **Phase 5**: RAG and AI Assistant
+- **Phase 5**: RAG and AI Assistant *(implemented; live LLM verification pending)*
 - **Phase 6**: Analytics dashboard
 - **Phase 7**: Competitor analysis and alerts
 - **Phase 8**: Testing, security, deployment, and production hardening
@@ -85,3 +85,6 @@ voxinsight/
 Phase 4 adds local semantic feedback retrieval, not RAG or answer generation. Feedback is embedded with `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dimensions) using lazy, CPU-only singleton loading and batch encoding. Vectors are unit-normalized and stored in FAISS `IndexFlatIP` indexes, where inner product is cosine similarity.
 
 Each dataset has its own index below `backend/data/faiss/<workspace UUID>/<dataset UUID>/`. A persistent JSON mapping translates FAISS positions to Feedback UUIDs; PostgreSQL remains the source of text and business metadata. Search authorizes workspace membership before any index is selected and resolves results from authorized database rows, so stale/deleted feedback is never returned. Generated indexes and model assets are ignored by Git.
+## Phase 5: Grounded business assistant
+
+Implemented: workspace-authorized RAG conversations, evidence citations, a bounded prompt-injection-resistant context builder, a replaceable OpenAI-compatible `gpt-4o-mini` provider, and a minimal `/chat` interface. It reuses Phase 4 semantic retrieval. Live provider verification remains pending.

@@ -98,6 +98,10 @@ export type SemanticSearchResult = {
   similarity_score: number;
 };
 
+export type Conversation = { id: string; workspace_id: string; user_id: string; title: string; created_at: string; updated_at: string };
+export type ChatMessage = { id: string; conversation_id: string; role: "user" | "assistant"; content: string; provider: string | null; model: string | null; created_at: string };
+export type Evidence = { feedback_id: string; dataset_id: string; similarity_score: number; rank: number; text: string };
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -233,4 +237,8 @@ export const api = {
   buildDatasetIndex: (datasetId: string) => request<VectorIndexStatus>(`/datasets/${datasetId}/index`, { method: "POST" }),
   getDatasetIndexStatus: (datasetId: string) => request<VectorIndexStatus>(`/datasets/${datasetId}/index-status`),
   semanticSearch: (payload: { workspace_id: string; query: string; top_k: number; dataset_id?: string }) => request<{ workspace_id: string; query: string; results: SemanticSearchResult[] }>("/search", { method: "POST", body: JSON.stringify(payload) }),
+  listConversations: (workspaceId: string) => request<Conversation[]>(`/conversations?workspace_id=${encodeURIComponent(workspaceId)}`),
+  createConversation: (payload: { workspace_id: string; title?: string }) => request<Conversation>("/conversations", { method: "POST", body: JSON.stringify(payload) }),
+  getConversation: (id: string) => request<Conversation & { messages: ChatMessage[] }>(`/conversations/${id}`),
+  sendMessage: (id: string, payload: { content: string; dataset_id?: string }) => request<{ message: ChatMessage; answer: string; evidence: Evidence[]; retrieval_metadata: Record<string, unknown> }>(`/conversations/${id}/messages`, { method: "POST", body: JSON.stringify(payload) }),
 };

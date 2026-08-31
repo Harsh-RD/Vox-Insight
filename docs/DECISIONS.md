@@ -89,3 +89,6 @@ This file documents the key technical and design decisions for VoxInsight to pro
 * **Reason**: A physically dataset-scoped index prevents accidental cross-workspace candidate retrieval and supports reliable rebuilds. The mapping contains only vector-position-to-Feedback UUID information; PostgreSQL remains authoritative for feedback, dataset, and authorization metadata. Unit-normalized embeddings make `IndexFlatIP` scores cosine similarities.
 * **Date**: 2026-08-30
 * **Status**: IMPLEMENTED (Phase 4)
+## ADR: Phase 5 grounded provider and normalized evidence
+
+`LLMProvider` decouples RAG from vendor SDKs. OpenAI Chat Completions using `gpt-4o-mini` is the primary configured provider because it is a practical API model; credentials are only environment variables. Conversation, Message, and MessageEvidence are normalized: evidence points to authoritative Feedback instead of copying feedback text. RAG reuses Phase 4 authorized search and persists assistant data only after successful generation.

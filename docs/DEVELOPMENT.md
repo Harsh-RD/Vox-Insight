@@ -9,10 +9,10 @@ This document is the persistent development-state record for the VoxInsight plat
 
 ## Current Status
 
-* **Current Phase**: Phase 4 — Semantic Embeddings + FAISS Retrieval
-* **Current Milestone**: Persistent workspace-isolated semantic retrieval
-* **Status**: Implemented and verified
-* **Last Verified**: 2026-08-31 (49 backend tests passed; frontend TypeScript, lint, and production build passed; PostgreSQL/Docker runtime verification pending)
+* **Current Phase**: Phase 5 — Grounded RAG Business Assistant
+* **Current Milestone**: Conversation, evidence, and provider orchestration
+* **Status**: Automated verification passed; live LLM and PostgreSQL runtime pending
+* **Last Verified**: 2026-09-01 (59 backend tests; frontend typecheck, lint, and production build passed)
 
 ---
 
@@ -21,7 +21,7 @@ This document is the persistent development-state record for the VoxInsight plat
 * **Current Phase**: Phase 4 — Semantic Embeddings + FAISS Retrieval
 * **Current Milestone**: Persistent workspace-isolated semantic retrieval
 * **Status**: Audited and verified (49 backend tests; frontend type check, lint, and production build).
-* **Next Task**: Phase 5 RAG and AI Assistant. Phase 4 deliberately contains retrieval only—no prompts, LLM calls, chat sessions, or answer generation.
+* **Next Task**: PostgreSQL runtime migration verification and optional live LLM smoke test.
 
 - [x] Lazy, thread-safe Sentence Transformers registry using `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dimensions), batch encoding, and unit normalization.
 - [x] Dataset-scoped FAISS `IndexFlatIP` indexes and JSON FAISS-position-to-Feedback UUID mappings persisted under `backend/data/faiss/`.
@@ -93,7 +93,10 @@ Phase 3 delivers a complete, production-ready multilingual NLP pipeline. The arc
 - **Phase 2**: Dataset and feedback ingestion
 - **Phase 3**: Multilingual preprocessing and NLP pipeline ✓ COMPLETE
 - **Phase 4**: Embeddings and FAISS semantic retrieval
-- **Phase 5**: RAG and AI Assistant
+- **Phase 5**: RAG and AI Assistant *(implemented; live provider verification pending)*
 - **Phase 6**: Analytics dashboard
 - **Phase 7**: Competitor analysis and alerts
 - **Phase 8**: Testing, security, deployment, and production hardening
+## Phase 5 Update (2026-09-01)
+
+Implemented conversation/message/evidence persistence, workspace-authorized RAG orchestration, bounded untrusted context and history, an OpenAI-compatible provider abstraction, controlled insufficient-evidence/provider failure handling, APIs, and a minimal `/chat` UI. Final full regression/frontend verification remains in progress; live provider and PostgreSQL runtime verification remain pending.

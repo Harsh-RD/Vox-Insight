@@ -3,7 +3,7 @@
 This document details the planned PostgreSQL database structure for VoxInsight. This design captures our core relational entities, fields, constraints, and relationships.
 
 > [!IMPORTANT]
-> **Status**: Phase 2 implements `datasets` and `feedback` through SQLAlchemy models and Alembic migration `002_dataset_feedback_ingestion`, following `001_initial_auth_schema`. PostgreSQL is implemented/configured; runtime integration verification remains pending because Docker is unavailable in the current environment. Later analysis and RAG tables remain planned.
+> **Status**: Phases 2–5 implement datasets, feedback, analysis, vector metadata, and normalized RAG conversation tables through additive Alembic migrations. PostgreSQL runtime integration verification remains pending because Docker is unavailable in the current environment.
 
 ---
 
@@ -203,3 +203,6 @@ To maintain database performance and modularity, we do not store heavy embedding
 | `last_indexed_at`, `error_message` | Operational status details |
 
 The on-disk mapping JSON maps FAISS ordinal positions to Feedback UUIDs. Search re-reads real Feedback records scoped to the authorized workspace, so cascaded/deleted records are never exposed even before a subsequent rebuild.
+## Phase 5 conversation persistence
+
+`conversations` belongs to a workspace and user. `messages` belongs to a conversation and stores user/assistant content plus non-secret provider/model labels. `message_evidence` joins an assistant message to Feedback with rank and similarity score; Feedback remains the source of truth. Migration `005_conversations_rag` adds foreign keys, indexes, cascades, and unique message-feedback evidence.

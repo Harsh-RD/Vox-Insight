@@ -28,6 +28,7 @@ body {
 }
 
 button, input { font: inherit; }
+textarea, select { font: inherit; }
 
 button {
   border: 0;
@@ -105,6 +106,20 @@ a:hover { text-decoration: underline; }
 .workspace-list strong, .workspace-list span { display: block; }
 .workspace-list li div span { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; }
 .role-badge { background: #edf1f8; border-radius: 999px; color: #46526a; font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.6rem; text-transform: capitalize; }
+.chat-controls { display: flex; gap: .75rem; }
+.chat-controls select, .chat-form textarea { border: 1px solid #c8d1e0; border-radius: .55rem; padding: .65rem .75rem; }
+.chat-layout { display: grid; gap: 1.5rem; grid-template-columns: 15rem 1fr; }
+.conversation-button { background: transparent; color: var(--foreground); margin-top: .5rem; padding: .6rem; text-align: left; width: 100%; }
+.conversation-button:hover { background: #edf1f8; }
+.messages { display: grid; gap: 1rem; max-height: 32rem; overflow-y: auto; }
+.chat-message { border-radius: .65rem; padding: .85rem 1rem; white-space: pre-wrap; }
+.chat-message p { margin: .35rem 0; }
+.chat-message.user { background: #eef0ff; }
+.chat-message.assistant { background: #f5f7fb; border: 1px solid var(--border); }
+.evidence { border-left: 3px solid var(--brand); margin: .75rem 0; padding-left: .75rem; }
+.evidence p { font-size: .9rem; }
+.chat-form { display: grid; gap: .75rem; grid-template-columns: 1fr auto; margin-top: 1rem; }
+.chat-form textarea { min-height: 5rem; resize: vertical; }
 
 @media (max-width: 40rem) {
   .auth-card { padding: 1.5rem; }
@@ -112,4 +127,6 @@ a:hover { text-decoration: underline; }
   .dashboard-header { align-items: flex-start; gap: 1rem; }
   .inline-form { grid-template-columns: 1fr; }
   .header-actions { flex-wrap: wrap; }
+  .chat-layout { grid-template-columns: 1fr; }
+  .chat-controls, .chat-form { grid-template-columns: 1fr; display: grid; }
 }
