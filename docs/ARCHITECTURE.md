@@ -145,3 +145,52 @@ If persisted index files are missing or corrupt, the service marks their metadat
 ## Phase 5 RAG layer
 
 The RAG service is a backend-only orchestration layer over Phase 4 search. It authorizes conversations and datasets, builds bounded evidence context, calls the provider abstraction, and persists only normalized message/evidence records. The frontend consumes the conversations API and cannot access FAISS or provider credentials.
+
+## Phase 6 Analytics Layer
+
+The analytics layer provides business intelligence through SQL-based aggregation over structured NLP results. Unlike RAG, which uses LLMs and vector retrieval, analytics only queries persistent data via SQLAlchemy ORM aggregation functions (COUNT, SUM, AVG) on database tables, ensuring fast, repeatable, and auditable metrics.
+
+### 6.1 Design Principles
+- **SQL-Only Aggregation**: All calculations use database-level aggregation (func.count, func.avg, func.sum). No Python-level data manipulation or LLM calls.
+- **Real Data, No Recomputation**: Metrics consume structured NLP results (Feedback, AnalysisResult, AspectAnalysis) already persisted during Phase 2–3.
+- **Workspace Isolation**: All analytics endpoints enforce workspace membership verification before responding, preventing cross-workspace data leaks.
+- **NULL Handling**: Percentage and rate calculations exclude NULL values from denominators. Coverage percentages represent (non-NULL count) / (total count).
+
+### 6.2 Analytics Service Architecture
+- **Module**: `backend/app/services/analytics.py` (~600 LOC)
+- **Functions**:
+  - `get_overview(db, user_id, workspace_id, dataset_id?)` — Returns 11 overview metrics.
+  - `get_sentiment_analytics(db, user_id, workspace_id, dataset_id?, start_date?, end_date?)` — Sentiment distribution with percentages and confidence.
+  - `get_aspect_analytics(db, user_id, workspace_id, dataset_id?, limit=20)` — Top aspects by frequency with per-aspect sentiment distribution.
+  - `get_emotion_analytics(db, user_id, workspace_id, dataset_id?)` — Emotion distribution with coverage percentage.
+  - `get_complaint_analytics(db, user_id, workspace_id, dataset_id?)` — Complaint classification metrics and rate.
+  - `get_trends(db, user_id, workspace_id, dataset_id?, start_date?, end_date?, granularity="daily")` — Time-series sentiment trends with SQLite-compatible date grouping.
+  - `get_dataset_comparison(db, user_id, workspace_id, dataset_ids?)` — Multi-dataset metric comparison.
+  - `get_source_comparison(db, user_id, workspace_id, dataset_id?)` — Metrics grouped by feedback source.
+
+### 6.3 Database Query Pattern
+All analytics functions use SQLAlchemy `select()` with `where()` filters and `func.*` aggregation. Example:
+```python
+query = select(func.count(Feedback.id)).where(
+    and_(
+        Feedback.dataset_id == dataset.id,
+        AnalysisResult.sentiment == "positive"
+    )
+)
+result = session.scalar(query)
+```
+
+### 6.4 Frontend Integration
+- **Dashboard Component**: `frontend/src/app/dashboard/page.tsx` displays KPI cards, sentiment/emotion charts, aspect rankings, trend tables, and complaint stats.
+- **API Client**: `frontend/lib/api.ts` exports typed methods for all 8 analytics endpoints.
+- **State Management**: React hooks manage dashboard state; all data flows from backend APIs.
+
+### 6.5 Metrics Implemented
+- **Overview**: Total feedback, analyzed count, pending/failed counts, analysis coverage, average rating, sentiment distribution, complaint distribution.
+- **Sentiment**: Sentiment distribution (counts and percentages), average confidence per sentiment.
+- **Aspects**: Aspect terms, mention frequency, per-aspect sentiment distribution.
+- **Emotion**: Emotion distribution, percentages, coverage percentage.
+- **Complaints**: Complaint true/false/unknown counts, complaint rate, coverage percentage.
+- **Trends**: Daily/weekly/monthly sentiment distribution time series.
+- **Comparisons**: Multi-dataset and multi-source metric aggregation.
+

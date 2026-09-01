@@ -167,3 +167,180 @@ Competitor analytics ingest.
 * `POST /conversations` — `{ workspace_id, title? }`.
 * `GET /conversations?workspace_id=UUID`, `GET /conversations/{id}`, and `DELETE /conversations/{id}` — all require ownership and workspace membership.
 * `POST /conversations/{id}/messages` — `{ content, dataset_id? }`; returns `message`, grounded `answer`, actual retrieved `evidence[]`, and retrieval metadata.
+
+## Implemented Phase 6 Analytics API (`/api/v1/analytics`)
+
+Business intelligence endpoints providing aggregated metrics over structured NLP analysis results. All endpoints require authentication and workspace membership verification. Optional `dataset_id` filters metrics to a single dataset; omitting it aggregates across all datasets in the workspace.
+
+### 2.11.1 Overview Metrics
+* **GET `/analytics/overview?workspace_id=UUID[&dataset_id=UUID]`**
+  - Description: Get high-level dashboard metrics.
+  - Response schema:
+    ```json
+    {
+      "total_feedback": 1234,
+      "analyzed_feedback": 980,
+      "pending_analysis": 50,
+      "failed_analysis": 4,
+      "analysis_coverage_percentage": 79.5,
+      "average_rating": 4.2,
+      "sentiment_distribution": {
+        "positive": 520,
+        "neutral": 300,
+        "negative": 160
+      },
+      "complaint_true": 120,
+      "complaint_false": 750,
+      "complaint_coverage_percentage": 88.8
+    }
+    ```
+
+### 2.11.2 Sentiment Analytics
+* **GET `/analytics/sentiment?workspace_id=UUID[&dataset_id=UUID][&start_date=YYYY-MM-DD][&end_date=YYYY-MM-DD]`**
+  - Description: Fetch sentiment distribution with confidence metrics.
+  - Response schema:
+    ```json
+    {
+      "sentiment_distribution": {
+        "positive": 520,
+        "neutral": 300,
+        "negative": 160
+      },
+      "sentiment_percentages": {
+        "positive": 52.0,
+        "neutral": 30.0,
+        "negative": 16.0
+      },
+      "average_sentiment_confidence": {
+        "positive": 0.96,
+        "neutral": 0.89,
+        "negative": 0.92
+      },
+      "total_with_sentiment": 980
+    }
+    ```
+
+### 2.11.3 Aspect-Based Sentiment Analysis
+* **GET `/analytics/aspects?workspace_id=UUID[&dataset_id=UUID][&limit=20]`**
+  - Description: Retrieve top aspects by mention frequency with per-aspect sentiment distribution.
+  - Response schema:
+    ```json
+    {
+      "top_aspects": [
+        {
+          "aspect_term": "login speed",
+          "mentions": 142,
+          "average_confidence": 0.94,
+          "sentiment_distribution": {
+            "positive": 25,
+            "neutral": 40,
+            "negative": 77
+          }
+        }
+      ]
+    }
+    ```
+
+### 2.11.4 Emotion Analytics
+* **GET `/analytics/emotions?workspace_id=UUID[&dataset_id=UUID]`**
+  - Description: Get emotion distribution and coverage metrics.
+  - Response schema:
+    ```json
+    {
+      "emotion_distribution": {
+        "happy": 150,
+        "sad": 80,
+        "angry": 60,
+        "neutral": 40
+      },
+      "emotion_percentages": {
+        "happy": 45.5,
+        "sad": 24.2,
+        "angry": 18.2,
+        "neutral": 12.1
+      },
+      "emotion_coverage_percentage": 73.5,
+      "total_with_emotion": 330,
+      "total_analyses": 450
+    }
+    ```
+
+### 2.11.5 Complaint Analytics
+* **GET `/analytics/complaints?workspace_id=UUID[&dataset_id=UUID]`**
+  - Description: Fetch complaint classification metrics and rate.
+  - Response schema:
+    ```json
+    {
+      "complaint_true": 120,
+      "complaint_false": 750,
+      "complaint_unknown": 110,
+      "complaint_rate": 13.8,
+      "complaint_coverage_percentage": 88.8
+    }
+    ```
+
+### 2.11.6 Sentiment Trends
+* **GET `/analytics/trends?workspace_id=UUID[&dataset_id=UUID][&start_date=YYYY-MM-DD][&end_date=YYYY-MM-DD][&granularity=daily|weekly|monthly]`**
+  - Description: Retrieve time-series sentiment distribution grouped by date/week/month.
+  - Response schema:
+    ```json
+    {
+      "trends": [
+        {
+          "date": "2024-01-15",
+          "positive": 45,
+          "neutral": 20,
+          "negative": 15,
+          "unknown": 5,
+          "total": 85
+        }
+      ],
+      "granularity": "daily"
+    }
+    ```
+
+### 2.11.7 Dataset Comparison
+* **GET `/analytics/datasets?workspace_id=UUID[&dataset_ids=UUID1,UUID2,...]`**
+  - Description: Compare metrics across multiple datasets.
+  - Response schema:
+    ```json
+    {
+      "comparison": [
+        {
+          "dataset_id": "UUID",
+          "dataset_name": "Q4 2024 Feedback",
+          "total_feedback": 500,
+          "analyzed_feedback": 480,
+          "analysis_coverage_percentage": 96.0,
+          "average_rating": 4.1,
+          "complaint_rate": 12.5
+        }
+      ]
+    }
+    ```
+
+### 2.11.8 Source Comparison
+* **GET `/analytics/sources?workspace_id=UUID[&dataset_id=UUID]`**
+  - Description: Break down metrics by feedback source (email, chat, survey, etc.).
+  - Response schema:
+    ```json
+    {
+      "sources": [
+        {
+          "source": "email",
+          "feedback_count": 450,
+          "sentiment_distribution": {
+            "positive": 280,
+            "neutral": 100,
+            "negative": 70
+          },
+          "complaint_rate": 15.6
+        }
+      ]
+    }
+    ```
+
+**Authorization Note**: All analytics endpoints enforce workspace membership verification at the service layer. Cross-workspace data access is rejected. If a dataset_id is provided, verified membership in both workspace and dataset is required.
+
+**NULL Handling Note**: Metrics exclude NULL values from percentage/rate calculations as specified in Phase 6. Coverage percentages are calculated as (non-NULL count) / (total count).
+

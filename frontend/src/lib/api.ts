@@ -102,6 +102,89 @@ export type Conversation = { id: string; workspace_id: string; user_id: string; 
 export type ChatMessage = { id: string; conversation_id: string; role: "user" | "assistant"; content: string; provider: string | null; model: string | null; created_at: string };
 export type Evidence = { feedback_id: string; dataset_id: string; similarity_score: number; rank: number; text: string };
 
+// Analytics types
+export type OverviewAnalytics = {
+  total_feedback: number;
+  analyzed_feedback: number;
+  pending_feedback: number;
+  failed_feedback: number;
+  analysis_coverage_percentage: number | null;
+  average_rating: number | null;
+  complaint_count: number;
+  complaint_rate: number | null;
+  positive_count: number;
+  neutral_count: number;
+  negative_count: number;
+};
+
+export type SentimentAnalytics = {
+  sentiment_distribution: Record<string, number>;
+  sentiment_percentages: Record<string, number | null>;
+  average_sentiment_confidence: Record<string, number>;
+  total_with_sentiment: number;
+};
+
+export type AspectItem = {
+  aspect_term: string;
+  mentions: number;
+  average_confidence: number | null;
+  sentiment_distribution: Record<string, number>;
+};
+
+export type AspectAnalytics = {
+  top_aspects: AspectItem[];
+};
+
+export type EmotionAnalytics = {
+  emotion_distribution: Record<string, number>;
+  emotion_percentages: Record<string, number>;
+  emotion_coverage_percentage: number | null;
+  total_with_emotion: number;
+  total_analyses: number;
+};
+
+export type ComplaintAnalytics = {
+  complaint_true: number;
+  complaint_false: number;
+  complaint_unknown: number;
+  complaint_rate: number | null;
+  complaint_coverage_percentage: number | null;
+};
+
+export type TrendPoint = {
+  date: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+  unknown: number;
+  total: number;
+};
+
+export type TrendsAnalytics = {
+  trends: TrendPoint[];
+  granularity: string;
+};
+
+export type DatasetComparisonItem = {
+  dataset_id: string;
+  dataset_name: string;
+} & OverviewAnalytics;
+
+export type DatasetComparisonAnalytics = {
+  datasets: DatasetComparisonItem[];
+};
+
+export type SourceItem = {
+  source: string;
+  feedback_count: number;
+  sentiment_distribution: Record<string, number>;
+  complaint_rate: number | null;
+};
+
+export type SourceComparisonAnalytics = {
+  sources: SourceItem[];
+};
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -241,4 +324,51 @@ export const api = {
   createConversation: (payload: { workspace_id: string; title?: string }) => request<Conversation>("/conversations", { method: "POST", body: JSON.stringify(payload) }),
   getConversation: (id: string) => request<Conversation & { messages: ChatMessage[] }>(`/conversations/${id}`),
   sendMessage: (id: string, payload: { content: string; dataset_id?: string }) => request<{ message: ChatMessage; answer: string; evidence: Evidence[]; retrieval_metadata: Record<string, unknown> }>(`/conversations/${id}/messages`, { method: "POST", body: JSON.stringify(payload) }),
+  // Analytics endpoints
+  getOverviewAnalytics: (workspaceId: string, datasetId?: string) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetId) params.append("dataset_id", datasetId);
+    return request<OverviewAnalytics>(`/analytics/overview?${params.toString()}`);
+  },
+  getSentimentAnalytics: (workspaceId: string, datasetId?: string, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetId) params.append("dataset_id", datasetId);
+    if (startDate) params.append("start_date", startDate);
+    if (endDate) params.append("end_date", endDate);
+    return request<SentimentAnalytics>(`/analytics/sentiment?${params.toString()}`);
+  },
+  getAspectAnalytics: (workspaceId: string, datasetId?: string, limit?: number) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetId) params.append("dataset_id", datasetId);
+    if (limit) params.append("limit", limit.toString());
+    return request<AspectAnalytics>(`/analytics/aspects?${params.toString()}`);
+  },
+  getEmotionAnalytics: (workspaceId: string, datasetId?: string) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetId) params.append("dataset_id", datasetId);
+    return request<EmotionAnalytics>(`/analytics/emotions?${params.toString()}`);
+  },
+  getComplaintAnalytics: (workspaceId: string, datasetId?: string) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetId) params.append("dataset_id", datasetId);
+    return request<ComplaintAnalytics>(`/analytics/complaints?${params.toString()}`);
+  },
+  getTrendsAnalytics: (workspaceId: string, datasetId?: string, startDate?: string, endDate?: string, granularity?: string) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetId) params.append("dataset_id", datasetId);
+    if (startDate) params.append("start_date", startDate);
+    if (endDate) params.append("end_date", endDate);
+    if (granularity) params.append("granularity", granularity);
+    return request<TrendsAnalytics>(`/analytics/trends?${params.toString()}`);
+  },
+  getDatasetComparison: (workspaceId: string, datasetIds?: string[]) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetIds?.length) params.append("dataset_ids", datasetIds.join(","));
+    return request<DatasetComparisonAnalytics>(`/analytics/datasets?${params.toString()}`);
+  },
+  getSourceComparison: (workspaceId: string, datasetId?: string) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetId) params.append("dataset_id", datasetId);
+    return request<SourceComparisonAnalytics>(`/analytics/sources?${params.toString()}`);
+  },
 };

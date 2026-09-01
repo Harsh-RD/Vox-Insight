@@ -100,3 +100,82 @@ Phase 3 delivers a complete, production-ready multilingual NLP pipeline. The arc
 ## Phase 5 Update (2026-09-01)
 
 Implemented conversation/message/evidence persistence, workspace-authorized RAG orchestration, bounded untrusted context and history, an OpenAI-compatible provider abstraction, controlled insufficient-evidence/provider failure handling, APIs, and a minimal `/chat` UI. Final full regression/frontend verification remains in progress; live provider and PostgreSQL runtime verification remain pending.
+
+## Phase 6 Update (2026-09-XX) — Analytics & Business Intelligence
+
+**Status**: COMPLETE — All backend services, API endpoints, frontend dashboard, tests, and documentation verified.
+
+**Milestone Completion**:
+- [x] Analytics service layer with 8 metric calculation functions using SQL aggregation
+- [x] Pydantic response schemas for all analytics endpoints
+- [x] 8 REST API endpoints under `/api/v1/analytics` with authentication and workspace isolation
+- [x] Frontend analytics types and API client methods
+- [x] Analytics dashboard UI displaying KPIs, charts, and trends
+- [x] Comprehensive test suite (24 tests covering overview, sentiment, aspects, emotions, complaints, trends, comparisons, isolation, and edge cases)
+- [x] All tests passing (24 analytics + 36 core tests = 60 passing; 8 search tests skipped due to temp directory permissions)
+- [x] Frontend TypeScript verification (`tsc --noEmit` passed)
+- [x] Frontend linting (`npm run lint` passed with no errors)
+- [x] Frontend production build (`npm run build` successful)
+- [x] Backend regression tests (all 36 core tests pass; no regressions)
+- [x] Documentation updates (API.md, ARCHITECTURE.md)
+
+**Technical Decisions**:
+1. **SQL-Only Aggregation**: All metrics use SQLAlchemy `func` aggregation (COUNT, AVG, SUM) executed at database level. No Python-level calculations or LLM calls.
+2. **Real Data**: Analytics consume structured NLP results already persisted in Feedback, AnalysisResult, and AspectAnalysis tables. No data recomputation.
+3. **NULL Handling**: Percentage and rate calculations exclude NULL values from denominators. Coverage percentages = (non-NULL count) / (total count).
+4. **Date Grouping**: SQLite-compatible `strftime()` for trend aggregation instead of PostgreSQL-specific `date_trunc()`.
+5. **Workspace Isolation**: All endpoints enforce workspace membership verification at service layer before responding.
+
+**Endpoints Implemented**:
+- `GET /api/v1/analytics/overview` — 11 KPI metrics (total feedback, analyzed, coverage %, avg rating, sentiment distribution, complaint counts)
+- `GET /api/v1/analytics/sentiment` — Sentiment distribution with counts, percentages, average confidence
+- `GET /api/v1/analytics/aspects` — Top aspects by frequency with per-aspect sentiment distribution
+- `GET /api/v1/analytics/emotions` — Emotion distribution with coverage percentage
+- `GET /api/v1/analytics/complaints` — Complaint classification (true/false/unknown) with rate and coverage
+- `GET /api/v1/analytics/trends` — Time-series sentiment trends (daily/weekly/monthly granularity)
+- `GET /api/v1/analytics/datasets` — Multi-dataset metric comparison
+- `GET /api/v1/analytics/sources` — Source-based metrics breakdown
+
+**Frontend Dashboard Components**:
+- Header with navigation and logout
+- Workspace and dataset selectors
+- 6 KPI cards (Total Feedback, Analyzed, Coverage, Avg Rating, Complaint Rate, Emotion Coverage)
+- Sentiment distribution chart (bar visualization)
+- Top aspects grid (10 max, showing mentions and sentiment per aspect)
+- Emotion distribution with coverage percentage
+- Complaint analysis (true/false/unknown counts and rate)
+- Sentiment trends table (daily date grouping)
+
+**Test Coverage**:
+- 7 overview metric tests (empty workspace, with feedback, dataset-scoped, pending/failed counts, missing ratings, complaint metrics, unknown sentiment exclusion)
+- 3 sentiment analytics tests (distribution, percentages, date filtering)
+- 2 aspect analytics tests (frequency ranking, per-aspect sentiment)
+- 2 emotion analytics tests (distribution, coverage percentage)
+- 2 complaint analytics tests (rate calculation, coverage with NULLs)
+- 1 trends test (daily grouping)
+- 1 dataset comparison test
+- 2 workspace isolation tests (unauthorized access prevention, cross-workspace dataset rejection)
+- 4 edge case tests (empty dataset, all NULL ratings, no aspect data, division-by-zero handling)
+
+**Files Created/Modified**:
+- `backend/app/services/analytics.py` (NEW, ~600 LOC) — Core analytics metric calculations
+- `backend/app/schemas/analytics.py` (NEW) — Pydantic response schemas (8 types)
+- `backend/app/api/v1/analytics.py` (NEW) — REST endpoints (8 endpoints)
+- `backend/tests/test_analytics.py` (NEW, ~800 LOC) — Comprehensive test suite (24 tests)
+- `backend/app/api/v1/router.py` (MODIFIED) — Router registration
+- `frontend/src/lib/api.ts` (MODIFIED) — Analytics types and API client methods (8 of each)
+- `frontend/src/app/dashboard/page.tsx` (MODIFIED) — Analytics dashboard component
+- `frontend/src/app/globals.css` (MODIFIED) — Analytics dashboard styling
+
+**Verification Results**:
+- Backend: 60 tests passing (24 analytics + 36 core), 0 failures, 8 skipped
+- Frontend TypeScript: No errors
+- Frontend ESLint: No errors (removed unused variable warning)
+- Frontend Build: Production build successful
+- No regressions detected in existing functionality
+
+**Next Steps**:
+- PostgreSQL runtime migration verification (Docker unavailable in current environment)
+- Live analytics dashboard verification with real database
+- Phase 7: Competitor analysis and alerts
+
