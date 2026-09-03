@@ -9,10 +9,10 @@ This document is the persistent development-state record for the VoxInsight plat
 
 ## Current Status
 
-* **Current Phase**: Phase 5 — Grounded RAG Business Assistant
-* **Current Milestone**: Conversation, evidence, and provider orchestration
-* **Status**: Automated verification passed; live LLM and PostgreSQL runtime pending
-* **Last Verified**: 2026-09-01 (59 backend tests; frontend typecheck, lint, and production build passed)
+* **Current Phase**: Phase 7 — Competitor Analysis & Alerts
+* **Current Milestone**: Deterministic competitor detection, persistent mentions, SQL-only benchmarking, configurable alerts, and UI dashboards
+* **Status**: COMPLETE — All backend services, Alembic migration 006, API endpoints, frontend pages, tests, and documentation verified
+* **Last Verified**: 2026-09-04 (114 backend tests passing; frontend typecheck, lint, and production build passed)
 
 ---
 
@@ -174,8 +174,53 @@ Implemented conversation/message/evidence persistence, workspace-authorized RAG 
 - Frontend Build: Production build successful
 - No regressions detected in existing functionality
 
+---
+
+## Phase 7 Completion Update (2026-09-04) — Competitor Analysis & Alerts
+
+**Status**: COMPLETE — All backend models, migration 006, services, REST APIs, frontend pages, comprehensive tests, and documentation fully verified.
+
+**Milestone Completion**:
+- [x] Additive Alembic migration `006_competitors_and_alerts` with `competitors`, `competitor_mentions`, and `alerts` tables (UUIDs, FKs with CASCADE, unique constraints, and indexes).
+- [x] Deterministic regex word-boundary competitor detection engine matching configured names and aliases without LLM or ML invocation.
+- [x] Persistent competitor mention extraction service with bounded batching and idempotent re-analysis.
+- [x] SQL-only competitor benchmarking service with non-NULL denominator percentages and sentiment coverage calculation.
+- [x] Full competitor CRUD and dataset analysis REST API endpoints under `/api/v1/competitors` and `/api/v1/datasets/{id}/competitors`.
+- [x] Configurable alert system with models and evaluation service supporting 5 constrained metrics and 4 comparison operators (`gt`, `gte`, `lt`, `lte`).
+- [x] Safe NULL handling for alert evaluations ensuring unavailable metrics never trigger false alerts and are never treated as zero.
+- [x] Alert CRUD and on-demand evaluation REST API endpoints under `/api/v1/alerts`.
+- [x] Strict workspace-isolation enforcement preventing cross-workspace competitor access, alert manipulation, or cross-workspace dataset/competitor reference creation.
+- [x] Frontend UI pages `/competitors` and `/alerts` with real-time management, dataset analysis triggers, live evaluation badges, and dashboard integration.
+- [x] Comprehensive test suites (`test_competitors.py`, `test_alerts.py`) passing all 30 milestone test cases + exact numeric tests A, B, C, D, E.
+- [x] Full backend regression suite: 114 tests passing, 0 failures.
+- [x] Frontend verification: TypeScript check (`tsc --noEmit`), ESLint, and Next.js production build (`npm run build`) passing with zero errors.
+- [x] Documentation updated: `API.md`, `ARCHITECTURE.md`, `DECISIONS.md`, and `DEVELOPMENT.md`.
+
+**Files Created/Modified**:
+- `backend/alembic/versions/006_competitors_and_alerts.py` (NEW)
+- `backend/app/models/competitor.py` (NEW)
+- `backend/app/models/competitor_mention.py` (NEW)
+- `backend/app/models/alert.py` (NEW)
+- `backend/app/models/__init__.py` (MODIFIED)
+- `backend/app/schemas/competitor.py` (NEW)
+- `backend/app/schemas/alert.py` (NEW)
+- `backend/app/services/competitor.py` (NEW)
+- `backend/app/services/alert.py` (NEW)
+- `backend/app/api/v1/competitors.py` (NEW)
+- `backend/app/api/v1/alerts.py` (NEW)
+- `backend/app/api/v1/router.py` (MODIFIED)
+- `backend/tests/test_competitors.py` (NEW)
+- `backend/tests/test_alerts.py` (NEW)
+- `frontend/src/lib/api.ts` (MODIFIED)
+- `frontend/src/app/competitors/page.tsx` (NEW)
+- `frontend/src/app/alerts/page.tsx` (NEW)
+- `frontend/src/app/dashboard/page.tsx` (MODIFIED)
+- `docs/API.md` (MODIFIED)
+- `docs/ARCHITECTURE.md` (MODIFIED)
+- `docs/DECISIONS.md` (MODIFIED)
+- `docs/DEVELOPMENT.md` (MODIFIED)
+
 **Next Steps**:
-- PostgreSQL runtime migration verification (Docker unavailable in current environment)
-- Live analytics dashboard verification with real database
-- Phase 7: Competitor analysis and alerts
+- Phase 8: Testing, security, deployment, and production hardening
+- PostgreSQL runtime migration verification (pending Docker environment availability)
 

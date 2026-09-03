@@ -10,5 +10,24 @@ from app.models.vector_index import VectorIndex
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.message_evidence import MessageEvidence
+from app.models.competitor import Competitor
+from app.models.competitor_mention import CompetitorMention
+from app.models.alert import Alert
 
-__all__ = ["User", "Workspace", "UserWorkspace", "RefreshSession", "Dataset", "Feedback", "AnalysisResult", "AspectAnalysis", "VectorIndex", "Conversation", "Message", "MessageEvidence"]
+__all__ = [
+    "User",
+    "Workspace",
+    "UserWorkspace",
+    "RefreshSession",
+    "Dataset",
+    "Feedback",
+    "AnalysisResult",
+    "AspectAnalysis",
+    "VectorIndex",
+    "Conversation",
+    "Message",
+    "MessageEvidence",
+    "Competitor",
+    "CompetitorMention",
+    "Alert",
+]

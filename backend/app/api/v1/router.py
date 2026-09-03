@@ -8,6 +8,11 @@ from app.api.v1.feedback import router as feedback_router
 from app.api.v1.search import router as search_router, dataset_router as search_dataset_router
 from app.api.v1.conversations import router as conversations_router
 from app.api.v1.analytics import router as analytics_router
+from app.api.v1.competitors import (
+    router as competitors_router,
+    dataset_competitors_router,
+)
+from app.api.v1.alerts import router as alerts_router
 
 api_v1_router = APIRouter()
 
@@ -20,3 +25,6 @@ api_v1_router.include_router(search_dataset_router)
 api_v1_router.include_router(search_router)
 api_v1_router.include_router(conversations_router)
 api_v1_router.include_router(analytics_router)
+api_v1_router.include_router(competitors_router)
+api_v1_router.include_router(dataset_competitors_router)
+api_v1_router.include_router(alerts_router)

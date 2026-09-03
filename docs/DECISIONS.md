@@ -92,3 +92,28 @@ This file documents the key technical and design decisions for VoxInsight to pro
 ## ADR: Phase 5 grounded provider and normalized evidence
 
 `LLMProvider` decouples RAG from vendor SDKs. OpenAI Chat Completions using `gpt-4o-mini` is the primary configured provider because it is a practical API model; credentials are only environment variables. Conversation, Message, and MessageEvidence are normalized: evidence points to authoritative Feedback instead of copying feedback text. RAG reuses Phase 4 authorized search and persists assistant data only after successful generation.
+
+---
+
+## 10. Deterministic Competitor Matching & SQL-Only Aggregation (Phase 7)
+
+* **Decision**: Implement competitor mention extraction using deterministic regex word-boundary alias matching and execute all competitor aggregation entirely within SQL.
+* **Reason**:
+  - LLMs or fuzzy extraction introduce latency, cost, and hallucination risks when extracting named competitors that users explicitly configure.
+  - Regex with word boundaries `rf"(?<!\w){re.escape(alias)}(?!\w)"` prevents false positive substring matching (e.g., "comp" in "company") while remaining Unicode-aware and case-insensitive.
+  - Doing all competitor aggregation (mentions, unique feedback, sentiment distributions, coverage, percentages) directly in SQL avoids materializing large volumes of competitor mentions in Python memory.
+  - Denominators for sentiment percentages strictly exclude mentions with NULL sentiment labels, accurately representing sentiment coverage.
+* **Date**: 2026-09-04
+* **Status**: IMPLEMENTED (Phase 7)
+
+---
+
+## 11. Rule-Based Alert Evaluation with Strict NULL Semantics (Phase 7)
+
+* **Decision**: Implement a synchronous, deterministic alert evaluation service reusing Phase 6 Analytics and Phase 7 Competitor Aggregation, with strict NULL handling.
+* **Reason**:
+  - Background workers, Celery, and external messaging channels (email, SMS, Webhooks) are out of scope and add operational overhead for this phase.
+  - Evaluating alerts on demand via `POST /api/v1/alerts/evaluate` provides immediate feedback in the UI and test suites.
+  - Handling unavailable or NULL metrics safely: if a metric cannot be calculated (e.g. 0 feedback records or no competitor mentions), the alert rule must **never** trigger (`triggered = false`). Treating NULL as 0 would cause inverted false positive triggers on operators like `lte`.
+* **Date**: 2026-09-04
+* **Status**: IMPLEMENTED (Phase 7)

@@ -6,7 +6,17 @@ import { useRouter } from "next/navigation";
 
 import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/components/auth-provider";
-import { api, Dataset, OverviewAnalytics, SentimentAnalytics, AspectAnalytics, EmotionAnalytics, ComplaintAnalytics, TrendsAnalytics } from "@/lib/api";
+import {
+  api,
+  CompetitorAnalysisResult,
+  Dataset,
+  OverviewAnalytics,
+  SentimentAnalytics,
+  AspectAnalytics,
+  EmotionAnalytics,
+  ComplaintAnalytics,
+  TrendsAnalytics,
+} from "@/lib/api";
 
 function DashboardContent() {
   const { workspaces, logout } = useAuth();
@@ -21,6 +31,7 @@ function DashboardContent() {
   const [emotions, setEmotions] = useState<EmotionAnalytics | null>(null);
   const [complaints, setComplaints] = useState<ComplaintAnalytics | null>(null);
   const [trends, setTrends] = useState<TrendsAnalytics | null>(null);
+  const [competitorStats, setCompetitorStats] = useState<CompetitorAnalysisResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,13 +65,14 @@ function DashboardContent() {
         setLoading(true);
         setError(null);
         
-        const [overviewData, sentimentData, aspectsData, emotionsData, complaintsData, trendsData] = await Promise.all([
+        const [overviewData, sentimentData, aspectsData, emotionsData, complaintsData, trendsData, competitorData] = await Promise.all([
           api.getOverviewAnalytics(personalWorkspace.id, selectedDataset),
           api.getSentimentAnalytics(personalWorkspace.id, selectedDataset),
           api.getAspectAnalytics(personalWorkspace.id, selectedDataset),
           api.getEmotionAnalytics(personalWorkspace.id, selectedDataset),
           api.getComplaintAnalytics(personalWorkspace.id, selectedDataset),
           api.getTrendsAnalytics(personalWorkspace.id, selectedDataset),
+          api.getCompetitorAnalysis(personalWorkspace.id, selectedDataset).catch(() => []),
         ]);
         
         setOverview(overviewData);
@@ -69,6 +81,7 @@ function DashboardContent() {
         setEmotions(emotionsData);
         setComplaints(complaintsData);
         setTrends(trendsData);
+        setCompetitorStats(competitorData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load analytics");
       } finally {
@@ -90,6 +103,8 @@ function DashboardContent() {
         </div>
         <div className="header-actions">
           <Link className="secondary-link" href="/datasets">Datasets</Link>
+          <Link className="secondary-link" href="/competitors">Competitors</Link>
+          <Link className="secondary-link" href="/alerts">Alerts</Link>
           <Link className="secondary-link" href="/search">Semantic search</Link>
           <Link className="secondary-link" href="/chat">Assistant</Link>
           <button className="secondary-button" type="button" onClick={handleLogout}>Sign out</button>
@@ -281,6 +296,50 @@ function DashboardContent() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </section>
+          )}
+
+          {/* Competitor Benchmarking Preview */}
+          {competitorStats && competitorStats.length > 0 && (
+            <section className="chart-section">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <h2 style={{ margin: 0 }}>Competitor Benchmarking</h2>
+                <Link href="/competitors" className="secondary-link" style={{ fontSize: "0.85rem" }}>
+                  View All Competitors &rarr;
+                </Link>
+              </div>
+              <div className="feedback-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Competitor</th>
+                      <th>Mentions</th>
+                      <th>Unique Feedbacks</th>
+                      <th>Positive %</th>
+                      <th>Negative %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {competitorStats.slice(0, 5).map((comp) => (
+                      <tr key={comp.competitor_id}>
+                        <td><strong>{comp.competitor_name}</strong></td>
+                        <td>{comp.total_mentions}</td>
+                        <td>{comp.unique_feedback_count}</td>
+                        <td>
+                          <span className="sentiment-badge positive">
+                            {comp.positive_percentage !== null ? `${comp.positive_percentage}%` : "—"}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="sentiment-badge negative">
+                            {comp.negative_percentage !== null ? `${comp.negative_percentage}%` : "—"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </section>
           )}

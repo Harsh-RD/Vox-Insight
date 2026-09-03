@@ -185,6 +185,65 @@ export type SourceComparisonAnalytics = {
   sources: SourceItem[];
 };
 
+export type Competitor = {
+  id: string;
+  workspace_id: string;
+  name: string;
+  aliases: string[];
+  description: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CompetitorAnalysisResult = {
+  competitor_id: string;
+  competitor_name: string;
+  total_mentions: number;
+  unique_feedback_count: number;
+  positive_mentions: number;
+  neutral_mentions: number;
+  negative_mentions: number;
+  sentiment_coverage: number | null;
+  positive_percentage: number | null;
+  neutral_percentage: number | null;
+  negative_percentage: number | null;
+};
+
+export type DatasetCompetitorAnalysisSummary = {
+  dataset_id: string;
+  scanned_feedback_count: number;
+  mentions_found: number;
+  competitors_detected: number;
+};
+
+export type Alert = {
+  id: string;
+  workspace_id: string;
+  name: string;
+  alert_type: string;
+  metric: string;
+  operator: string;
+  threshold: number;
+  dataset_id: string | null;
+  competitor_id: string | null;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AlertEvaluationItem = {
+  id: string;
+  name: string;
+  metric: string;
+  operator: string;
+  threshold: number;
+  current_value: number | null;
+  triggered: boolean;
+  dataset_id: string | null;
+  competitor_id: string | null;
+};
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -371,4 +430,53 @@ export const api = {
     if (datasetId) params.append("dataset_id", datasetId);
     return request<SourceComparisonAnalytics>(`/analytics/sources?${params.toString()}`);
   },
+
+  // Competitor endpoints
+  listCompetitors: (workspaceId: string) =>
+    request<Competitor[]>(`/competitors?workspace_id=${encodeURIComponent(workspaceId)}`),
+  createCompetitor: (payload: { workspace_id: string; name: string; aliases?: string[]; description?: string; active?: boolean }) =>
+    request<Competitor>("/competitors", { method: "POST", body: JSON.stringify(payload) }),
+  getCompetitor: (competitorId: string) => request<Competitor>(`/competitors/${competitorId}`),
+  updateCompetitor: (competitorId: string, payload: { name?: string; aliases?: string[]; description?: string; active?: boolean }) =>
+    request<Competitor>(`/competitors/${competitorId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteCompetitor: (competitorId: string) =>
+    request<{ message: string }>(`/competitors/${competitorId}`, { method: "DELETE" }),
+  analyzeDatasetCompetitors: (datasetId: string) =>
+    request<DatasetCompetitorAnalysisSummary>(`/datasets/${datasetId}/competitors/analyze`, { method: "POST" }),
+  getDatasetCompetitors: (datasetId: string) =>
+    request<CompetitorAnalysisResult[]>(`/datasets/${datasetId}/competitors`),
+  getCompetitorAnalysis: (workspaceId: string, datasetId?: string, competitorId?: string) => {
+    const params = new URLSearchParams({ workspace_id: workspaceId });
+    if (datasetId) params.append("dataset_id", datasetId);
+    if (competitorId) params.append("competitor_id", competitorId);
+    return request<CompetitorAnalysisResult[]>(`/competitors/analysis?${params.toString()}`);
+  },
+
+  // Alert endpoints
+  listAlerts: (workspaceId: string) =>
+    request<Alert[]>(`/alerts?workspace_id=${encodeURIComponent(workspaceId)}`),
+  createAlert: (payload: {
+    workspace_id: string;
+    name: string;
+    alert_type?: string;
+    metric: string;
+    operator: string;
+    threshold: number;
+    dataset_id?: string;
+    competitor_id?: string;
+    enabled?: boolean;
+  }) => request<Alert>("/alerts", { method: "POST", body: JSON.stringify(payload) }),
+  getAlert: (alertId: string) => request<Alert>(`/alerts/${alertId}`),
+  updateAlert: (alertId: string, payload: {
+    name?: string;
+    metric?: string;
+    operator?: string;
+    threshold?: number;
+    dataset_id?: string | null;
+    competitor_id?: string | null;
+    enabled?: boolean;
+  }) => request<Alert>(`/alerts/${alertId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteAlert: (alertId: string) => request<{ message: string }>(`/alerts/${alertId}`, { method: "DELETE" }),
+  evaluateAlerts: (workspaceId: string) =>
+    request<{ alerts: AlertEvaluationItem[] }>(`/alerts/evaluate?workspace_id=${encodeURIComponent(workspaceId)}`, { method: "POST" }),
 };

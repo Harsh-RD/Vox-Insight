@@ -344,3 +344,126 @@ Business intelligence endpoints providing aggregated metrics over structured NLP
 
 **NULL Handling Note**: Metrics exclude NULL values from percentage/rate calculations as specified in Phase 6. Coverage percentages are calculated as (non-NULL count) / (total count).
 
+---
+
+## 2.12 Competitor Intelligence Module (`/api/v1/competitors`)
+
+Provides deterministic, explainable mention extraction and SQL-only aggregation for workspace-configured competitors.
+
+### 2.12.1 Competitor CRUD
+* **POST `/competitors`**
+  - Description: Create a new competitor with aliases in a workspace.
+  - Payload:
+    ```json
+    {
+      "workspace_id": "UUID",
+      "name": "Acme Corp",
+      "aliases": ["acme", "acme inc"],
+      "description": "Primary enterprise competitor",
+      "active": true
+    }
+    ```
+* **GET `/competitors?workspace_id=UUID`**
+  - Description: List all competitors configured in a workspace.
+* **GET `/competitors/{competitor_id}`**
+  - Description: Get details for a specific competitor.
+* **PATCH `/competitors/{competitor_id}`**
+  - Description: Update competitor name, aliases, description, or active status.
+  - Payload: `{ "name": "...", "aliases": ["..."], "active": false }`
+* **DELETE `/competitors/{competitor_id}`**
+  - Description: Delete competitor and cascade delete associated mentions.
+
+### 2.12.2 Competitor Analysis & Benchmarking
+* **POST `/datasets/{dataset_id}/competitors/analyze`**
+  - Description: Deterministically scan feedback in a dataset for mentions of active competitors using regex word boundaries. No LLM or NLP recomputation is performed.
+  - Response schema:
+    ```json
+    {
+      "dataset_id": "UUID",
+      "scanned_feedback_count": 250,
+      "mentions_found": 35,
+      "competitors_detected": 4
+    }
+    ```
+* **GET `/datasets/{dataset_id}/competitors`**
+  - Description: Retrieve competitor-level statistics for a specific dataset.
+* **GET `/competitors/analysis?workspace_id=UUID[&dataset_id=UUID][&competitor_id=UUID]`**
+  - Description: Workspace-level competitor benchmarking and sentiment analysis aggregated completely in SQL.
+  - Response schema:
+    ```json
+    [
+      {
+        "competitor_id": "UUID",
+        "competitor_name": "Acme Corp",
+        "total_mentions": 120,
+        "unique_feedback_count": 98,
+        "positive_mentions": 42,
+        "neutral_mentions": 25,
+        "negative_mentions": 53,
+        "sentiment_coverage": 100.0,
+        "positive_percentage": 35.0,
+        "neutral_percentage": 20.83,
+        "negative_percentage": 44.17
+      }
+    ]
+    ```
+  - **NULL Semantics**: Mentions with NULL sentiment are excluded from positive/neutral/negative percentage denominators; coverage is computed as `(with_sentiment / total_mentions) * 100`.
+
+---
+
+## 2.13 Alerts Module (`/api/v1/alerts`)
+
+Provides configurable threshold alert definitions and on-demand metric evaluation.
+
+### 2.13.1 Alert CRUD
+* **POST `/alerts`**
+  - Description: Create an alert rule in a workspace.
+  - Payload:
+    ```json
+    {
+      "workspace_id": "UUID",
+      "name": "High Negative Sentiment Alert",
+      "alert_type": "threshold",
+      "metric": "negative_sentiment_percentage",
+      "operator": "gte",
+      "threshold": 50.0,
+      "dataset_id": "UUID (optional)",
+      "competitor_id": "UUID (optional)",
+      "enabled": true
+    }
+    ```
+  - Supported metrics: `negative_sentiment_percentage`, `complaint_rate`, `analysis_coverage_percentage`, `competitor_negative_percentage`, `competitor_mentions`.
+  - Supported operators: `gt`, `gte`, `lt`, `lte`.
+* **GET `/alerts?workspace_id=UUID`**
+  - Description: List all alerts for the workspace.
+* **GET `/alerts/{alert_id}`**
+  - Description: Get a specific alert rule.
+* **PATCH `/alerts/{alert_id}`**
+  - Description: Update alert threshold, operator, status, or reference filters.
+* **DELETE `/alerts/{alert_id}`**
+  - Description: Delete an alert rule.
+
+### 2.13.2 Alert Evaluation
+* **POST `/alerts/evaluate?workspace_id=UUID`**
+  - Description: Evaluate all enabled alerts for a workspace against current computed metrics.
+  - Response schema:
+    ```json
+    {
+      "alerts": [
+        {
+          "id": "UUID",
+          "name": "High Negative Sentiment Alert",
+          "metric": "negative_sentiment_percentage",
+          "operator": "gte",
+          "threshold": 50.0,
+          "current_value": 63.2,
+          "triggered": true,
+          "dataset_id": null,
+          "competitor_id": null
+        }
+      ]
+    }
+    ```
+  - **Evaluation Semantics**: If a metric is NULL or unavailable (e.g. 0 feedback records or no competitor mentions), the alert safely does **not** trigger (`triggered: false`). Disabled alerts are excluded from evaluation.
+  - **Notification Scope**: External notifications (SMS, Email, Webhooks, Push) are out of scope for Phase 7; alerts represent the rule and evaluation layer.
+

@@ -194,3 +194,32 @@ result = session.scalar(query)
 - **Trends**: Daily/weekly/monthly sentiment distribution time series.
 - **Comparisons**: Multi-dataset and multi-source metric aggregation.
 
+---
+
+## 7. Competitor Intelligence & Configurable Alerts (Phase 7)
+
+Phase 7 introduces deterministic competitor mention intelligence and a rule-based alert evaluation engine.
+
+### 7.1 Competitor Detection & Matching
+- **Deterministic Seam**: No LLMs or additional ML models are used for competitor extraction.
+- **Matching Engine**: Uses regex word-boundary matching `rf"(?<!\w){re.escape(alias)}(?!\w)"` with case-insensitive normalization. This prevents false substring matches (such as "comp" matching "company").
+- **Batch Processing**: Dataset feedback is scanned in bounded batches, recording mentions in `competitor_mentions`.
+- **Idempotency**: Existing `(competitor_id, feedback_id)` pairs are tracked to ensure re-analysis does not produce duplicate mention records.
+- **Sentiment Association**: Mentions join existing `AnalysisResult` sentiment labels. If sentiment is NULL or pending, it remains NULL and is never fabricated.
+
+### 7.2 Competitor Analytics (SQL-Only Aggregation)
+- **Aggregation Boundary**: All competitor metric calculations (total mentions, unique feedbacks, sentiment distributions, sentiment coverage, positive/neutral/negative percentages) are executed entirely in PostgreSQL/SQLite using SQLAlchemy `func.count()`, `func.distinct()`, and conditional `case()` statements.
+- **Non-NULL Denominators**: Sentiment percentages calculate ratios only over mentions with non-NULL sentiment (`sentiment_label IS NOT NULL`). Sentiment coverage calculates `(with_sentiment / total_mentions) * 100`.
+
+### 7.3 Configurable Alert System
+- **Rule Engine**: Constrained, deterministic threshold evaluation for business metrics:
+  1. `negative_sentiment_percentage`
+  2. `complaint_rate`
+  3. `analysis_coverage_percentage`
+  4. `competitor_negative_percentage`
+  5. `competitor_mentions`
+- **Supported Operators**: `gt` (>), `gte` (>=), `lt` (<), `lte` (<=).
+- **Safe NULL Semantics**: If a metric is NULL or cannot be calculated (e.g. 0 feedback rows or no competitor mentions), the alert will **not** trigger (`triggered = false`). NULL is never treated as zero.
+- **Workspace Security**: Strict foreign key and service-level validation guarantees that an alert cannot reference a dataset or competitor belonging to another workspace. Cross-workspace CRUD is strictly forbidden.
+- **Notification Scope**: Phase 7 delivers the rule and evaluation engine via `POST /api/v1/alerts/evaluate`. External background notifications (Email, SMS, Webhooks, Push) are intentionally omitted and deferred.
+
