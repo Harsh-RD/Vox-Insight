@@ -9,10 +9,10 @@ This document is the persistent development-state record for the VoxInsight plat
 
 ## Current Status
 
-* **Current Phase**: Phase 7 — Competitor Analysis & Alerts
-* **Current Milestone**: Deterministic competitor detection, persistent mentions, SQL-only benchmarking, configurable alerts, and UI dashboards
-* **Status**: COMPLETE — All backend services, Alembic migration 006, API endpoints, frontend pages, tests, and documentation verified
-* **Last Verified**: 2026-09-04 (114 backend tests passing; frontend typecheck, lint, and production build passed)
+* **Current Phase**: Phase 8 — Production Hardening, Deployment Readiness & Final Polish
+* **Current Milestone**: Security hardening, full-stack Dockerization, error envelopes, unified UI navigation, portfolio README, and regression verification
+* **Status**: COMPLETE — All Phase 1 through 8 objectives implemented and verified
+* **Last Verified**: 2026-09-05 (118 backend tests passing; frontend TypeScript check, ESLint, and Next.js production build passed)
 
 ---
 
@@ -221,6 +221,27 @@ Implemented conversation/message/evidence persistence, workspace-authorized RAG 
 - `docs/DEVELOPMENT.md` (MODIFIED)
 
 **Next Steps**:
-- Phase 8: Testing, security, deployment, and production hardening
-- PostgreSQL runtime migration verification (pending Docker environment availability)
+- Production staging deployment
+- PostgreSQL runtime migration verification (pending Docker environment availability on host)
+
+---
+
+## Phase 8 Completion Update (2026-09-05)
+
+* **Current Phase**: Phase 8 — Production Hardening, Deployment Readiness & Final Polish
+* **Status**: COMPLETE — All hardening tasks implemented and fully verified.
+* **Verification Note**: 118 backend tests passing (4 new Phase 8 tests added). Frontend TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), and production Next.js build (`npm run build`) passed with zero errors. PostgreSQL runtime verification remains explicitly pending due to absence of Docker on the host.
+
+### Phase 8 Deliverables:
+- [x] **CORS Configuration**: Dynamic, configurable CORS origin parsing with secure defaults (`localhost:3000`, `127.0.0.1:3000`) and customizable `CORS_ORIGINS` in `config.py` and `main.py`.
+- [x] **File Upload Safety**: Strict 10MB maximum file size safeguard on CSV uploads (`MAX_UPLOAD_SIZE_BYTES = 10485760`) in `services/dataset.py`.
+- [x] **API Error Consistency**: Unhandled `ValueError` in `api/v1/analytics.py:128` converted to structured 422 `AppException` with code `INVALID_DATASET_IDS`.
+- [x] **Dead Code Removal**: Removed orphaned `backend/app/api/v1/analysis.py` router file.
+- [x] **Dependency Cleanup**: Removed duplicate `httpx>=0.27` entry in `backend/requirements.txt`.
+- [x] **Pytest Environment Hardening**: Added `addopts = "--basetemp=./test_temp"` to `pyproject.toml` and updated `.gitignore` to avoid Windows system temp directory permission failures.
+- [x] **Environment Template**: Created comprehensive `.env.example` documenting all configuration keys with safe placeholder values and no secrets.
+- [x] **Container Deployment**: Created production-ready `backend/Dockerfile`, multi-stage `frontend/Dockerfile`, `.dockerignore` files, and full-stack `docker-compose.yml` (`postgres`, `backend`, `frontend`, persistent volumes).
+- [x] **Frontend Navigation Polish**: Unified global navigation headers across all authenticated pages (`Dashboard`, `Datasets`, `Datasets/[id]`, `Search`, `Assistant`, `Competitors`, `Alerts`).
+- [x] **Portfolio Documentation**: Completely rewrote `README.md` to professional portfolio quality with architecture diagrams, capability matrix, and explicit limitation disclosures.
+- [x] **Testing**: Added `backend/tests/test_phase8_hardening.py` covering CORS parsing, 422 error envelopes, upload size limits, and health contract.
 

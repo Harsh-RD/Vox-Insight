@@ -117,3 +117,27 @@ This file documents the key technical and design decisions for VoxInsight to pro
   - Handling unavailable or NULL metrics safely: if a metric cannot be calculated (e.g. 0 feedback records or no competitor mentions), the alert rule must **never** trigger (`triggered = false`). Treating NULL as 0 would cause inverted false positive triggers on operators like `lte`.
 * **Date**: 2026-09-04
 * **Status**: IMPLEMENTED (Phase 7)
+
+---
+
+## 12. Security Safeguards & CORS Hardening (Phase 8)
+
+* **Decision**: Make CORS origins configurable via `CORS_ORIGINS` settings while enforcing strict upload bounds and structured error envelopes.
+* **Reason**:
+  - Hardcoded localhost origins in production present cross-origin vulnerabilities when deployed behind public domains.
+  - Allowing CSV uploads without file size limits introduces denial-of-service risks through memory exhaustion. A 10MB limit protects server memory while easily accommodating typical feedback exports (~50,000+ rows).
+  - Malformed query parameters (e.g. invalid UUIDs in comma-separated dataset IDs) must return structured 422 `AppException` responses rather than unhandled 500 errors to maintain API envelope predictability.
+* **Date**: 2026-09-05
+* **Status**: IMPLEMENTED (Phase 8)
+
+---
+
+## 13. Full-Stack Containerization Strategy (Phase 8)
+
+* **Decision**: Provide clean, modular Dockerfiles for FastAPI backend and Next.js frontend alongside a unified `docker-compose.yml` with healthchecks and persistent named volumes.
+* **Reason**:
+  - Avoids heavyweight orchestration (Kubernetes/Helm) while providing a reproducible single-command developer and deployment experience (`docker compose up --build`).
+  - Next.js is built via multi-stage alpine container to minimize runtime image size.
+  - FAISS index directory and PostgreSQL data directory are mapped to named volumes (`faiss_data`, `pgdata`) ensuring persistent state across container restarts.
+* **Date**: 2026-09-05
+* **Status**: IMPLEMENTED (Phase 8)

@@ -32,6 +32,20 @@ class Settings(BaseSettings):
 
     # CORS
     FRONTEND_URL: str = "http://localhost:3000"
+    CORS_ORIGINS: str = ""  # Comma-separated list of allowed origins, or empty for defaults
+
+    # Ingestion Constraints
+    MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB limit for uploaded CSV files
+
+    def get_cors_origins(self) -> list[str]:
+        """Compute the list of allowed CORS origins."""
+        origins = [self.FRONTEND_URL.rstrip("/"), "http://localhost:3000", "http://127.0.0.1:3000"]
+        if self.CORS_ORIGINS:
+            for item in self.CORS_ORIGINS.split(","):
+                cleaned = item.strip().rstrip("/")
+                if cleaned and cleaned not in origins:
+                    origins.append(cleaned)
+        return list(dict.fromkeys(origins))
 
     # Semantic retrieval
     EMBEDDING_MODEL: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"

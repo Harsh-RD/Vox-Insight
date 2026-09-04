@@ -17,11 +17,7 @@ def create_app() -> FastAPI:
     )
 
     # Configure CORS Middleware
-    origins = [
-        settings.FRONTEND_URL,
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
+    origins = settings.get_cors_origins()
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,

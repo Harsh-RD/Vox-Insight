@@ -3,10 +3,11 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.exceptions import AppException
 from app.database.session import get_db
 from app.models.user import User
 from app.schemas.analytics import (
@@ -124,8 +125,12 @@ def get_dataset_comparison(
     if dataset_ids:
         try:
             dataset_id_list = [uuid.UUID(did.strip()) for did in dataset_ids.split(",")]
-        except ValueError:
-            raise ValueError("Invalid dataset IDs")
+        except ValueError as exc:
+            raise AppException(
+                message="Invalid dataset IDs format. Expected comma-separated UUIDs.",
+                code="INVALID_DATASET_IDS",
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            ) from exc
     
     result = analytics.get_dataset_comparison(
         db, current_user.id, workspace_id, dataset_id_list

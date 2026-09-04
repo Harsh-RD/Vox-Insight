@@ -8,6 +8,7 @@ from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.core.exceptions import NotFoundException, PermissionDeniedException
 from app.models.dataset import Dataset
 from app.models.feedback import Feedback
@@ -81,6 +82,15 @@ def upload_csv(db: Session, dataset: Dataset, file: UploadFile) -> dict:
     filename = file.filename or ""
     if not filename.lower().endswith(".csv"):
         raise ValueError("Only .csv files are supported")
+
+    # Safeguard against unbounded upload size
+    file.file.seek(0, io.SEEK_END)
+    file_size = file.file.tell()
+    file.file.seek(0)
+    if file_size > settings.MAX_UPLOAD_SIZE_BYTES:
+        raise ValueError(
+            f"File size ({file_size} bytes) exceeds the maximum allowed limit of {settings.MAX_UPLOAD_SIZE_BYTES} bytes"
+        )
 
     dataset.status = "processing"
     dataset.original_filename = filename[:255]

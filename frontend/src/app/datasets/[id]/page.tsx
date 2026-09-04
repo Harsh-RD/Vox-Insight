@@ -44,7 +44,17 @@ function DatasetDetailContent() {
   }
   if (!dataset && !error) return <main className="centered-status">Loading dataset…</main>;
   return <main className="dashboard-page">
-    <header className="dashboard-header"><div><p className="eyebrow">Dataset</p><h1>{dataset?.name ?? "Unavailable"}</h1></div><Link className="secondary-link" href="/datasets">All datasets</Link></header>
+    <header className="dashboard-header">
+      <div><p className="eyebrow">Dataset</p><h1>{dataset?.name ?? "Unavailable"}</h1></div>
+      <div className="header-actions">
+        <Link className="secondary-link" href="/dashboard">Dashboard</Link>
+        <Link className="secondary-link" href="/datasets">All Datasets</Link>
+        <Link className="secondary-link" href="/competitors">Competitors</Link>
+        <Link className="secondary-link" href="/alerts">Alerts</Link>
+        <Link className="secondary-link" href="/search">Semantic Search</Link>
+        <Link className="secondary-link" href="/chat">Assistant</Link>
+      </div>
+    </header>
     {error && <p className="form-error" role="alert">{error}</p>}
     {dataset && <><section className="workspace-section"><p className="muted">{dataset.source ?? "No source"} · {dataset.row_count} rows · {dataset.status}</p><div className="header-actions"><label className="upload-label">Upload CSV<input type="file" accept=".csv,text/csv" onChange={onFileChange} disabled={isUploading} /></label><button className="secondary-button" type="button" onClick={deleteDataset}>Delete dataset</button></div>{isUploading && <p className="muted">Importing CSV…</p>}{summary && <p className="upload-summary">Imported {summary.rows_imported} of {summary.rows_read} rows; skipped {summary.rows_skipped} invalid rows.</p>}</section>
     <section className="workspace-section"><h2>Feedback preview</h2><div className="feedback-table"><table><thead><tr><th>Text</th><th>Rating</th><th>Language</th><th>Status</th></tr></thead><tbody>{feedback.map((item) => <tr key={item.id}><td>{item.original_text}</td><td>{item.rating ?? "—"}</td><td>{item.language ?? "—"}</td><td>{item.processing_status}</td></tr>)}</tbody></table></div>{feedback.length === 0 && <p className="muted">Upload a CSV with a text column to preview feedback.</p>}</section></>}

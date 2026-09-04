@@ -41,7 +41,16 @@ function DatasetsContent() {
   }
 
   return <main className="dashboard-page">
-    <header className="dashboard-header"><div><p className="eyebrow">VoxInsight</p><h1>Datasets</h1></div><Link className="secondary-link" href="/dashboard">Workspace</Link></header>
+    <header className="dashboard-header">
+      <div><p className="eyebrow">VoxInsight</p><h1>Datasets</h1></div>
+      <div className="header-actions">
+        <Link className="secondary-link" href="/dashboard">Dashboard</Link>
+        <Link className="secondary-link" href="/competitors">Competitors</Link>
+        <Link className="secondary-link" href="/alerts">Alerts</Link>
+        <Link className="secondary-link" href="/search">Semantic Search</Link>
+        <Link className="secondary-link" href="/chat">Assistant</Link>
+      </div>
+    </header>
     <section className="workspace-section">
       <h2>Create dataset</h2>
       <form className="inline-form" onSubmit={createDataset}>
