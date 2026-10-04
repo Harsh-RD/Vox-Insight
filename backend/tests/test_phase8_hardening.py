@@ -67,7 +67,7 @@ def test_csv_upload_size_limit_enforced(client, monkeypatch):
     assert response.status_code == 422
     payload = response.json()
     assert payload["success"] is False
-    assert payload["error"]["code"] == "INVALID_CSV"
+    assert payload["error"]["code"] == "INVALID_FILE"
     assert "exceeds the maximum allowed limit" in payload["error"]["message"]
 
 

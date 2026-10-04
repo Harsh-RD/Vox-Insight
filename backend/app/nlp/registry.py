@@ -18,7 +18,11 @@ def _get_cache(key: str) -> Any:
         return _MODEL_CACHE.get(key)
 
 
+import os
+
 def get_sentiment_pipeline() -> Any:
+    if os.environ.get("FAST_NLP_MODE", "true").lower() in ("true", "1", "yes"):
+        return None
     cached = _get_cache("sentiment_pipeline")
     if cached is not None:
         return cached
@@ -39,6 +43,8 @@ def get_sentiment_pipeline() -> Any:
 
 
 def get_language_pipeline() -> Any:
+    if os.environ.get("FAST_NLP_MODE", "true").lower() in ("true", "1", "yes"):
+        return None
     cached = _get_cache("language_pipeline")
     if cached is not None:
         return cached
@@ -57,6 +63,8 @@ def get_language_pipeline() -> Any:
 
 
 def get_go_emotions_pipeline() -> Any:
+    if os.environ.get("FAST_NLP_MODE", "true").lower() in ("true", "1", "yes"):
+        return None
     cached = _get_cache("go_emotions_pipeline")
     if cached is not None:
         return cached

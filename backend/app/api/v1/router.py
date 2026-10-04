@@ -13,6 +13,8 @@ from app.api.v1.competitors import (
     dataset_competitors_router,
 )
 from app.api.v1.alerts import router as alerts_router
+from app.api.v1.demo import router as demo_router
+from app.api.v1.users import router as users_router
 
 api_v1_router = APIRouter()
 
@@ -28,3 +30,5 @@ api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(competitors_router)
 api_v1_router.include_router(dataset_competitors_router)
 api_v1_router.include_router(alerts_router)
+api_v1_router.include_router(demo_router)
+api_v1_router.include_router(users_router)

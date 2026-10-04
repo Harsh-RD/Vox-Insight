@@ -34,8 +34,31 @@ def get_dataset_analysis_status(db: Session, dataset_id: uuid.UUID, user_id: uui
     for row in feedback_rows:
         status_counts[row.processing_status] = status_counts.get(row.processing_status, 0) + 1
 
-    analysis_count = db.scalar(select(__import__('sqlalchemy').func.count()).select_from(AnalysisResult).join(Feedback, AnalysisResult.feedback_id == Feedback.id).where(Feedback.dataset_id == dataset.id)) or 0
-    return {"dataset_id": str(dataset.id), "workspace_id": str(dataset.workspace_id), "feedback_count": len(feedback_rows), "analysis_count": int(analysis_count), "status_counts": status_counts}
+    analyzed_count = status_counts.get("completed", 0)
+    pending_count = status_counts.get("pending", 0)
+    failed_count = status_counts.get("failed", 0)
+    total = len(feedback_rows)
+
+    overall_status = "pending"
+    if analyzed_count == total and total > 0:
+        overall_status = "completed"
+    elif status_counts.get("processing", 0) > 0:
+        overall_status = "processing"
+    elif analyzed_count > 0:
+        overall_status = "partial"
+
+    return {
+        "dataset_id": str(dataset.id),
+        "workspace_id": str(dataset.workspace_id),
+        "status": overall_status,
+        "feedback_count": total,
+        "analyzed_count": analyzed_count,
+        "pending_count": pending_count,
+        "failed_count": failed_count,
+        # legacy fields kept for backwards compat
+        "analysis_count": analyzed_count,
+        "status_counts": status_counts,
+    }
 
 
 def analyze_feedback(db: Session, *, feedback_id: uuid.UUID, user_id: uuid.UUID) -> Dict[str, Any]:
@@ -137,10 +160,29 @@ def analyze_feedback(db: Session, *, feedback_id: uuid.UUID, user_id: uuid.UUID)
 
 def analyze_dataset(db: Session, *, dataset_id: uuid.UUID, user_id: uuid.UUID) -> Dict[str, Any]:
     dataset = get_dataset_for_user(db, dataset_id, user_id)
-    feedback_rows = db.scalars(select(Feedback).where(Feedback.dataset_id == dataset.id).where(Feedback.processing_status != "completed")).all()
+    feedback_rows = db.scalars(
+        select(Feedback)
+        .where(Feedback.dataset_id == dataset.id)
+        .where(Feedback.processing_status != "completed")
+    ).all()
+    processed_count = 0
+    failed_count = 0
     for feedback in feedback_rows:
-        analyze_feedback(db, feedback_id=feedback.id, user_id=user_id)
-    return {"dataset_id": str(dataset.id), "processed_count": len(feedback_rows), "status": "completed"}
+        try:
+            result = analyze_feedback(db, feedback_id=feedback.id, user_id=user_id)
+            if result.get("status") == "completed":
+                processed_count += 1
+            else:
+                failed_count += 1
+        except Exception:
+            failed_count += 1
+    return {
+        "dataset_id": str(dataset.id),
+        "processed_count": processed_count,
+        "failed_count": failed_count,
+        "total_rows": len(feedback_rows),
+        "status": "completed" if failed_count == 0 else "partial",
+    }
 
 
 def analysis_response(analysis: AnalysisResult) -> Dict[str, Any]:

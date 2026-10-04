@@ -55,9 +55,9 @@ def delete(dataset_id: uuid.UUID, current_user: User = Depends(get_current_user)
 def upload(dataset_id: uuid.UUID, file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     dataset = dataset_service.get_dataset_for_user(db, dataset_id, current_user.id)
     try:
-        summary = dataset_service.upload_csv(db, dataset, file)
+        summary = dataset_service.upload_dataset_file(db, dataset, file)
     except ValueError as exc:
-        raise AppException(str(exc), code="INVALID_CSV", status_code=status.HTTP_422_UNPROCESSABLE_CONTENT) from exc
+        raise AppException(str(exc), code="INVALID_FILE", status_code=status.HTTP_422_UNPROCESSABLE_CONTENT) from exc
     return {"success": True, "data": {**summary, "dataset": dataset_response(summary["dataset"])}}
 
 

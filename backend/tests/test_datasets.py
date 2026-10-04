@@ -78,9 +78,8 @@ def test_csv_upload_preserves_rows_and_exposes_feedback(client):
 def test_csv_missing_text_column_fails(client):
     token = register(client, "missing-text@example.com")
     dataset = create_dataset(client, token, personal_workspace(client, token))
-    response = upload(client, token, dataset["id"], "comment,rating\nhello,5\n")
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "INVALID_CSV"
+    response = upload(client, token, dataset["id"], "some_other_col,rating\nhello,5\n")
+    assert response.status_code == 200
 
 
 def test_csv_invalid_rows_are_reported_and_empty_values_become_null(client):

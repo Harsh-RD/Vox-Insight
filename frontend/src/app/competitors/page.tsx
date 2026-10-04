@@ -1,11 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState, useCallback } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { Users, Search, Plus, Activity, Edit2, Trash2, ShieldAlert, Check } from "lucide-react";
+import { motion } from "framer-motion";
 
+import { AppShell } from "@/components/app-shell";
 import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/components/auth-provider";
+import { PageTransition, StaggerContainer, FadeIn } from "@/components/ui/motion";
 import {
   api,
   ApiError,
@@ -15,43 +17,39 @@ import {
   type DatasetCompetitorAnalysisSummary,
 } from "@/lib/api";
 
-function CompetitorsContent() {
-  const { workspaces, logout } = useAuth();
-  const router = useRouter();
-  const selectedWorkspace = workspaces[0];
+function fmtPct(v: number | null | undefined): string {
+  if (v == null) return "—";
+  return `${v.toFixed(1)}%`;
+}
 
-  const [workspaceId, setWorkspaceId] = useState("");
-  const activeWorkspaceId = workspaceId || selectedWorkspace?.id || "";
+function CompetitorsContent() {
+  const { workspaces } = useAuth();
+  const workspace = workspaces.find((w) => w.role === "owner") ?? workspaces[0];
+  const activeWorkspaceId = workspace?.id ?? "";
 
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [analytics, setAnalytics] = useState<CompetitorAnalysisResult[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [selectedDatasetId, setSelectedDatasetId] = useState<string>("");
-
+  const [selectedDatasetId, setSelectedDatasetId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Form states for creating new competitor
+  // Create form
   const [name, setName] = useState("");
   const [aliases, setAliases] = useState("");
   const [description, setDescription] = useState("");
-  const [active, setActive] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
 
-  // Editing state
+  // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editAliases, setEditAliases] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editActive, setEditActive] = useState(true);
 
-  async function handleLogout() {
-    await logout();
-    router.replace("/login");
-  }
-
-  const refreshData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!activeWorkspaceId) return;
     try {
       const [comps, analysisResults, dsList] = await Promise.all([
@@ -62,8 +60,8 @@ function CompetitorsContent() {
       setCompetitors(comps);
       setAnalytics(analysisResults);
       setDatasets(dsList);
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load competitor data.");
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to load competitor data.");
     }
   }, [activeWorkspaceId, selectedDatasetId]);
 
@@ -81,14 +79,13 @@ function CompetitorsContent() {
         setAnalytics(analysisResults);
         setDatasets(dsList);
       })
-      .catch((caught) => {
+      .catch((e: unknown) => {
         if (!active) return;
-        setError(caught instanceof ApiError ? caught.message : "Failed to load competitor data.");
+        setError(e instanceof ApiError ? e.message : "Failed to load competitor data.");
       })
       .finally(() => {
         if (active) setIsLoading(false);
       });
-
     return () => {
       active = false;
     };
@@ -100,43 +97,29 @@ function CompetitorsContent() {
     setError(null);
     setSuccessMessage(null);
     try {
-      const aliasList = aliases
-        .split(",")
-        .map((a) => a.trim())
-        .filter(Boolean);
+      const aliasList = aliases.split(",").map((a) => a.trim()).filter(Boolean);
       await api.createCompetitor({
         workspace_id: activeWorkspaceId,
         name: name.trim(),
         aliases: aliasList,
         description: description.trim() || undefined,
-        active,
+        active: true,
       });
       setName("");
       setAliases("");
       setDescription("");
-      setActive(true);
+      setShowAddForm(false);
       setSuccessMessage("Competitor added successfully.");
-      await refreshData();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to create competitor.");
+      await loadData();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to create competitor.");
     }
-  }
-
-  function startEdit(comp: Competitor) {
-    setEditingId(comp.id);
-    setEditName(comp.name);
-    setEditAliases(comp.aliases.join(", "));
-    setEditDesc(comp.description || "");
-    setEditActive(comp.active);
   }
 
   async function saveEdit(comp: Competitor) {
     setError(null);
     try {
-      const aliasList = editAliases
-        .split(",")
-        .map((a) => a.trim())
-        .filter(Boolean);
+      const aliasList = editAliases.split(",").map((a) => a.trim()).filter(Boolean);
       await api.updateCompetitor(comp.id, {
         name: editName.trim(),
         aliases: aliasList,
@@ -144,329 +127,286 @@ function CompetitorsContent() {
         active: editActive,
       });
       setEditingId(null);
-      setSuccessMessage("Competitor updated.");
-      await refreshData();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to update competitor.");
+      await loadData();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to update competitor.");
     }
   }
 
   async function handleDelete(comp: Competitor) {
-    if (!confirm(`Are you sure you want to delete "${comp.name}"?`)) return;
+    if (!confirm(`Delete "${comp.name}"?`)) return;
     setError(null);
     try {
       await api.deleteCompetitor(comp.id);
-      setSuccessMessage(`Competitor "${comp.name}" deleted.`);
-      await refreshData();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to delete competitor.");
+      setSuccessMessage(`"${comp.name}" deleted.`);
+      await loadData();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to delete competitor.");
     }
   }
 
-  async function runDatasetAnalysis() {
-    if (!selectedDatasetId) {
-      setError("Please select a dataset to analyze.");
-      return;
-    }
+  async function runAnalysis() {
+    if (!selectedDatasetId) { setError("Select a dataset to analyze."); return; }
     setIsAnalyzing(true);
     setError(null);
     setSuccessMessage(null);
     try {
-      const summary: DatasetCompetitorAnalysisSummary =
-        await api.analyzeDatasetCompetitors(selectedDatasetId);
+      const summary: DatasetCompetitorAnalysisSummary = await api.analyzeDatasetCompetitors(selectedDatasetId);
       setSuccessMessage(
-        `Analysis complete: scanned ${summary.scanned_feedback_count} feedbacks, identified ${summary.mentions_found} mentions across ${summary.competitors_detected} competitors.`
+        `Analysis complete: ${summary.scanned_feedback_count.toLocaleString()} feedbacks scanned, ` +
+        `${summary.mentions_found.toLocaleString()} mentions found across ${summary.competitors_detected} competitors.`
       );
-      await refreshData();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to analyze dataset.");
+      await loadData();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to analyze dataset.");
     } finally {
       setIsAnalyzing(false);
     }
   }
 
+  if (isLoading) {
+    return <div className="page-content" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}><div className="animate-spin"><Activity size={32} color="var(--brand)" /></div></div>;
+  }
+
   return (
-    <main className="dashboard-page">
-      <header className="dashboard-header">
-        <div>
-          <p className="eyebrow">VoxInsight Intelligence</p>
-          <h1>Competitor Analysis</h1>
-        </div>
-        <div className="header-actions">
-          <Link className="secondary-link" href="/dashboard">Dashboard</Link>
-          <Link className="secondary-link" href="/datasets">Datasets</Link>
-          <Link className="secondary-link" href="/search">Semantic Search</Link>
-          <Link className="secondary-link" href="/alerts">Alerts</Link>
-          <Link className="secondary-link" href="/chat">Assistant</Link>
-          <button className="secondary-button" type="button" onClick={handleLogout}>Sign out</button>
-        </div>
-      </header>
-
-      {/* Workspace and Dataset Selectors */}
-      <section className="filters-section">
-        <div className="filter-group">
-          <label htmlFor="comp-workspace">Workspace:</label>
-          <select
-            id="comp-workspace"
-            value={activeWorkspaceId}
-            onChange={(e) => setWorkspaceId(e.target.value)}
-            className="filter-select"
-          >
-            {workspaces.map((ws) => (
-              <option key={ws.id} value={ws.id}>{ws.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label htmlFor="comp-dataset">Dataset Filter:</label>
-          <select
-            id="comp-dataset"
-            value={selectedDatasetId}
-            onChange={(e) => setSelectedDatasetId(e.target.value)}
-            className="filter-select"
-          >
-            <option value="">All Datasets</option>
-            {datasets.map((ds) => (
-              <option key={ds.id} value={ds.id}>{ds.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {selectedDatasetId && (
-          <button
-            type="button"
-            onClick={runDatasetAnalysis}
-            disabled={isAnalyzing}
-            style={{ marginLeft: "auto" }}
-          >
-            {isAnalyzing ? "Scanning Feedbacks…" : "Run Competitor Analysis"}
-          </button>
-        )}
-      </section>
-
-      {error && <div className="error-banner">{error}</div>}
-      {successMessage && <div className="upload-summary">{successMessage}</div>}
-
-      {/* Add Competitor Section */}
-      <section className="workspace-section">
-        <h2>Add Competitor</h2>
-        <p className="muted">
-          Configure competitors and known aliases for deterministic mention extraction.
-        </p>
-        <form onSubmit={handleCreate} className="auth-form" style={{ maxWidth: "48rem" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-            <label>
-              Competitor Name:
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Competitor X"
-                required
-              />
-            </label>
-            <label>
-              Aliases (comma separated):
-              <input
-                value={aliases}
-                onChange={(e) => setAliases(e.target.value)}
-                placeholder="e.g. comp x, competitorx, cx"
-              />
-            </label>
+    <div className="page-content">
+      <PageTransition>
+        {/* Header */}
+        <div className="page-header" style={{ marginBottom: "2rem" }}>
+          <div>
+            <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Users size={24} color="var(--brand)" /> Competitor Intelligence
+            </h1>
+            <p className="page-subtitle">Track and benchmark competitor mentions in your customer feedback.</p>
           </div>
-          <label>
-            Description (optional):
-            <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief context or product line"
-            />
-          </label>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <input
-              type="checkbox"
-              id="active-checkbox"
-              checked={active}
-              onChange={(e) => setActive(e.target.checked)}
-              style={{ width: "1.2rem", height: "1.2rem" }}
-            />
-            <label htmlFor="active-checkbox" style={{ margin: 0, fontWeight: "normal" }}>
-              Active (scanned during dataset feedback analysis)
-            </label>
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <select
+              className="input"
+              value={selectedDatasetId}
+              onChange={(e) => setSelectedDatasetId(e.target.value)}
+              style={{ width: 250, padding: "0.5rem 1rem" }}
+            >
+              <option value="">Select dataset to analyze</option>
+              {datasets.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+            {selectedDatasetId && competitors.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={runAnalysis}
+                disabled={isAnalyzing}
+              >
+                {isAnalyzing ? <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><Activity size={16} /></motion.div> Scanning...</> : <><Search size={16} /> Scan Dataset</>}
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowAddForm(true)}
+            >
+              <Plus size={16} /> Add Competitor
+            </button>
           </div>
-          <button type="submit" style={{ maxWidth: "12rem" }}>Add Competitor</button>
-        </form>
-      </section>
+        </div>
 
-      {/* Competitor Analytics Comparison */}
-      <section className="chart-section" style={{ marginTop: "2rem" }}>
-        <h2>Competitor Benchmarking & Sentiment</h2>
-        {isLoading ? (
-          <div className="loading-spinner">Loading analytics…</div>
-        ) : analytics.length === 0 ? (
-          <p className="muted">No competitor mentions detected yet. Add competitors and run analysis.</p>
-        ) : (
-          <div className="feedback-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Competitor</th>
-                  <th>Mentions</th>
-                  <th>Unique Feedbacks</th>
-                  <th>Sentiment Coverage</th>
-                  <th>Positive %</th>
-                  <th>Neutral %</th>
-                  <th>Negative %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.map((item) => (
-                  <tr key={item.competitor_id}>
-                    <td>
-                      <strong>{item.competitor_name}</strong>
-                    </td>
-                    <td>{item.total_mentions}</td>
-                    <td>{item.unique_feedback_count}</td>
-                    <td>
-                      {item.sentiment_coverage !== null ? `${item.sentiment_coverage}%` : "—"}
-                    </td>
-                    <td>
-                      <span className="sentiment-badge positive">
-                        {item.positive_percentage !== null ? `${item.positive_percentage}%` : "—"}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="sentiment-badge neutral">
-                        {item.neutral_percentage !== null ? `${item.neutral_percentage}%` : "—"}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="sentiment-badge negative">
-                        {item.negative_percentage !== null ? `${item.negative_percentage}%` : "—"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Messages */}
+        {error && (
+          <div style={{ background: "var(--danger-bg)", color: "var(--danger-fg)", padding: "1rem", borderRadius: "var(--radius)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <ShieldAlert size={20} /> {error}
           </div>
         )}
-      </section>
+        {successMessage && (
+          <div style={{ background: "var(--success-bg)", color: "var(--success-fg)", padding: "1rem", borderRadius: "var(--radius)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <Check size={20} /> {successMessage}
+          </div>
+        )}
 
-      {/* Configured Competitors List */}
-      <section className="workspace-section">
-        <h2>Configured Competitors ({competitors.length})</h2>
-        {isLoading ? (
-          <p className="muted">Loading competitors…</p>
-        ) : competitors.length === 0 ? (
-          <p className="muted">No competitors configured for this workspace.</p>
-        ) : (
-          <ul className="workspace-list">
-            {competitors.map((comp) => (
-              <li key={comp.id} style={{ alignItems: "flex-start", gap: "1rem" }}>
-                {editingId === comp.id ? (
-                  <div style={{ flex: 1, display: "grid", gap: "0.5rem" }}>
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      placeholder="Competitor Name"
-                    />
-                    <input
-                      value={editAliases}
-                      onChange={(e) => setEditAliases(e.target.value)}
-                      placeholder="Aliases (comma-separated)"
-                    />
-                    <input
-                      value={editDesc}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                      placeholder="Description"
-                    />
-                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={editActive}
-                        onChange={(e) => setEditActive(e.target.checked)}
-                        id={`edit-active-${comp.id}`}
-                      />
-                      <label htmlFor={`edit-active-${comp.id}`}>Active</label>
-                      <button type="button" onClick={() => saveEdit(comp)} style={{ minHeight: "2rem", padding: "0.3rem 0.8rem" }}>
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => setEditingId(null)}
-                        style={{ minHeight: "2rem", padding: "0.3rem 0.8rem" }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
+        {/* Add competitor form */}
+        {showAddForm && (
+          <FadeIn>
+            <div className="card" style={{ marginBottom: "2rem" }}>
+              <div className="card-header">
+                <div className="card-title">Add New Competitor</div>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowAddForm(false)}>Cancel</button>
+              </div>
+              <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "1.5rem", marginTop: "1rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                  <div>
+                    <label className="input-label" htmlFor="comp-name">Competitor Name *</label>
+                    <input className="input" id="comp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Acme Corp" required />
                   </div>
-                ) : (
-                  <>
-                    <div style={{ flex: 1 }}>
-                      <strong>{comp.name}</strong>
-                      <span style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", marginTop: "0.35rem" }}>
-                        {comp.aliases.length > 0 ? (
-                          comp.aliases.map((alias) => (
-                            <span
-                              key={alias}
-                              style={{
-                                background: "#f0f2f7",
-                                padding: "0.15rem 0.5rem",
-                                borderRadius: "4px",
-                                fontSize: "0.8rem",
-                              }}
-                            >
-                              {alias}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="muted" style={{ fontSize: "0.8rem" }}>No aliases</span>
-                        )}
-                      </span>
-                      {comp.description && (
-                        <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-                          {comp.description}
-                        </p>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <span className="role-badge" style={{ background: comp.active ? "#d1fae5" : "#fee2e2" }}>
-                        {comp.active ? "Active" : "Inactive"}
-                      </span>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => startEdit(comp)}
-                        style={{ minHeight: "2rem", padding: "0.25rem 0.6rem" }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => handleDelete(comp)}
-                        style={{ minHeight: "2rem", padding: "0.25rem 0.6rem", color: "var(--danger)" }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
+                  <div>
+                    <label className="input-label" htmlFor="comp-aliases">Aliases (comma-separated)</label>
+                    <input className="input" id="comp-aliases" value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder="e.g. acme, acme corp, acmecorp" />
+                  </div>
+                </div>
+                <div>
+                  <label className="input-label" htmlFor="comp-desc">Description (optional)</label>
+                  <input className="input" id="comp-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief context about this competitor" />
+                </div>
+                <div>
+                  <button type="submit" className="btn btn-primary"><Plus size={16} /> Create Competitor</button>
+                </div>
+              </form>
+            </div>
+          </FadeIn>
         )}
-      </section>
-    </main>
+
+        {/* Analytics table */}
+        {analytics.length > 0 && (
+          <FadeIn>
+            <div className="card" style={{ marginBottom: "2rem" }}>
+              <div className="card-header">
+                <div className="card-title">Competitor Benchmarking</div>
+              </div>
+              <div style={{ overflowX: "auto", marginTop: "1rem" }}>
+                <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid var(--border-strong)", color: "var(--fg-muted)", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      <th style={{ padding: "1rem 0" }}>Competitor</th>
+                      <th style={{ padding: "1rem 0" }}>Total Mentions</th>
+                      <th style={{ padding: "1rem 0" }}>Unique Feedbacks</th>
+                      <th style={{ padding: "1rem 0" }}>Coverage</th>
+                      <th style={{ padding: "1rem 0" }}>Positive</th>
+                      <th style={{ padding: "1rem 0" }}>Neutral</th>
+                      <th style={{ padding: "1rem 0" }}>Negative</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analytics.map((item) => (
+                      <tr key={item.competitor_id} style={{ borderBottom: "1px solid var(--border)", fontSize: "0.95rem" }}>
+                        <td style={{ padding: "1rem 0", fontWeight: 700, color: "var(--fg)" }}>{item.competitor_name}</td>
+                        <td style={{ padding: "1rem 0", color: "var(--fg-2)" }}>{item.total_mentions.toLocaleString()}</td>
+                        <td style={{ padding: "1rem 0", color: "var(--fg-2)" }}>{item.unique_feedback_count.toLocaleString()}</td>
+                        <td style={{ padding: "1rem 0", color: "var(--fg-2)" }}>{fmtPct(item.sentiment_coverage)}</td>
+                        <td style={{ padding: "1rem 0" }}><span style={{ color: "var(--success-fg)", fontWeight: 700 }}>{fmtPct(item.positive_percentage)}</span></td>
+                        <td style={{ padding: "1rem 0" }}><span style={{ color: "var(--info-fg)", fontWeight: 700 }}>{fmtPct(item.neutral_percentage)}</span></td>
+                        <td style={{ padding: "1rem 0" }}><span style={{ color: "var(--danger-fg)", fontWeight: 700 }}>{fmtPct(item.negative_percentage)}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </FadeIn>
+        )}
+
+        {/* Configured competitors */}
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Tracked Competitors ({competitors.length})</div>
+            {!showAddForm && (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowAddForm(true)}>+ Add</button>
+            )}
+          </div>
+
+          {competitors.length === 0 ? (
+            <div className="empty-state" style={{ marginTop: "2rem" }}>
+              <div className="empty-icon"><Users size={32} /></div>
+              <div className="empty-title">No competitors yet</div>
+              <div className="empty-description">
+                Add competitors and their aliases, then scan a feedback dataset to detect mentions.
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ marginTop: "1rem" }}
+                onClick={() => setShowAddForm(true)}
+              >
+                Add First Competitor
+              </button>
+            </div>
+          ) : (
+            <StaggerContainer className="bento-grid" style={{ marginTop: "1.5rem" }}>
+              {competitors.map((comp) => (
+                <FadeIn key={comp.id} className="bento-col-4">
+                  <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
+                    {editingId === comp.id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                        <input className="input" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" />
+                        <input className="input" value={editAliases} onChange={(e) => setEditAliases(e.target.value)} placeholder="Aliases (comma-sep)" />
+                        <input className="input" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Description" />
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
+                          <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}>
+                            <input type="checkbox" checked={editActive} onChange={(e) => setEditActive(e.target.checked)} style={{ width: 16, height: 16, cursor: "pointer" }} />
+                            Active Tracking
+                          </label>
+                          <div style={{ display: "flex", gap: "0.5rem" }}>
+                            <button type="button" className="btn btn-primary btn-sm" onClick={() => saveEdit(comp)}>Save</button>
+                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditingId(null)}>Cancel</button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                          <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--fg)", fontFamily: "var(--font-display)" }}>
+                            {comp.name}
+                          </div>
+                          <span style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", fontWeight: 700, borderRadius: "var(--radius-sm)", background: comp.active ? "var(--success-bg)" : "var(--border)", color: comp.active ? "var(--success-fg)" : "var(--fg-muted)" }}>
+                            {comp.active ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                        {comp.description && (
+                          <div style={{ fontSize: "0.9rem", color: "var(--fg-muted)", marginBottom: "1rem", lineHeight: 1.5 }}>{comp.description}</div>
+                        )}
+                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem", flex: 1, alignContent: "flex-start" }}>
+                          {comp.aliases.map((alias) => (
+                            <span key={alias} style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: "0.25rem 0.5rem", borderRadius: "var(--radius-sm)", fontSize: "0.75rem", color: "var(--fg-2)", fontWeight: 500 }}>{alias}</span>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem", marginTop: "auto", borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ flex: 1 }}
+                            onClick={() => {
+                              setEditingId(comp.id);
+                              setEditName(comp.name);
+                              setEditAliases(comp.aliases.join(", "));
+                              setEditDesc(comp.description ?? "");
+                              setEditActive(comp.active);
+                            }}
+                          >
+                            <Edit2 size={14} /> Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleDelete(comp)}
+                            style={{ color: "var(--danger-fg)", borderColor: "var(--danger-bg)", background: "var(--danger-bg)" }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </FadeIn>
+              ))}
+            </StaggerContainer>
+          )}
+        </div>
+
+        {/* Missing data hints */}
+        {!isLoading && competitors.length > 0 && analytics.length === 0 && (
+          <div style={{ background: "var(--brand-light)", color: "var(--brand)", padding: "1.5rem", borderRadius: "var(--radius-lg)", marginTop: "2rem", textAlign: "center", border: "1px dashed var(--brand)" }}>
+            <strong>Next step:</strong> Select a dataset from the top dropdown and click &ldquo;Scan Dataset&rdquo; to detect competitor mentions in your feedback.
+          </div>
+        )}
+      </PageTransition>
+    </div>
   );
 }
 
 export default function CompetitorsPage() {
   return (
     <AuthGuard>
-      <CompetitorsContent />
+      <AppShell>
+        <CompetitorsContent />
+      </AppShell>
     </AuthGuard>
   );
 }

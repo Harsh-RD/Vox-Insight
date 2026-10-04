@@ -3,8 +3,9 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, Response
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from app.api.deps import get_current_user
 from app.core.exceptions import AppException
@@ -21,6 +22,9 @@ from app.schemas.analytics import (
     TrendsResponse,
 )
 from app.services import analytics
+from app.models.feedback import Feedback
+import csv
+import io
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -150,3 +154,60 @@ def get_source_comparison(
         db, current_user.id, workspace_id, dataset_id
     )
     return SourceComparisonResponse(**result)
+
+
+@router.get("/export")
+def export_analytics(
+    workspace_id: uuid.UUID = Query(..., description="Workspace ID"),
+    dataset_id: Optional[uuid.UUID] = Query(None, description="Optional dataset ID"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Export feedback and analysis results as CSV."""
+    analytics._ensure_workspace_access(db, current_user.id, workspace_id)
+    
+    stmt = select(Feedback).where(Feedback.workspace_id == workspace_id)
+    if dataset_id:
+        analytics._ensure_dataset_in_workspace(db, dataset_id, workspace_id)
+        stmt = stmt.where(Feedback.dataset_id == dataset_id)
+        
+    feedback_items = db.execute(stmt).scalars().all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow([
+        "ID", "Text", "Source", "Rating", "Timestamp", 
+        "Sentiment", "Emotion", "Is Complaint", "Language"
+    ])
+    
+    for f in feedback_items:
+        sentiment = ""
+        emotion = ""
+        is_complaint = ""
+        lang = ""
+        
+        if f.analysis:
+            sentiment = f.analysis.sentiment_label or ""
+            emotion = f.analysis.emotion_label or ""
+            is_complaint = "Yes" if f.analysis.complaint_label == "complaint" else "No"
+            lang = f.analysis.language or ""
+            
+        writer.writerow([
+            str(f.id),
+            f.text,
+            f.source or "",
+            f.rating or "",
+            f.timestamp.isoformat() if f.timestamp else "",
+            sentiment,
+            emotion,
+            is_complaint,
+            lang
+        ])
+        
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=export_{workspace_id}.csv"}
+    )

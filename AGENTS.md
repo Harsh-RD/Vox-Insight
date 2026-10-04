@@ -30,11 +30,12 @@ Welcome to VoxInsight. This document is a persistent instruction manual for AI c
 5. **Never hardcode API keys or secrets**: Use environment variables for all secrets, credentials, and API keys.
 6. **Use environment variables for secrets**: Configure access keys, database URLs, and external API endpoints dynamically.
 7. **Keep frontend and backend separated**: Maintain clean API boundaries. The frontend is a consumer of backend APIs.
-8. **Keep NLP components modular and replaceable**: Standardize model interfaces so NLP modules can be swapped or upgraded independently.
-9. **Keep database logic separate from API routes**: Utilize service or repository patterns; keep FastAPI route handlers thin.
-10. **Keep business logic separate from UI**: Ensure state management and visual presentation are decoupled in the frontend.
-11. **Prefer small, testable modules**: Write modular, clean, and testable code with high unit test coverage.
-12. **Do not make major architectural changes without documenting them**: Architectural revisions must be logged in `docs/DECISIONS.md`.
+8. **Encourage Modern UI/UX**: Frontend development should prioritize a rich, modern, and animated user experience (e.g., Bento grids, micro-animations). It is acceptable to use UI-level mock data for visual enhancements (like sparkline aesthetics) as long as the core metrics are powered by the backend.
+9. **Keep NLP components modular and replaceable**: Standardize model interfaces so NLP modules can be swapped or upgraded independently.
+10. **Keep database logic separate from API routes**: Utilize service or repository patterns; keep FastAPI route handlers thin.
+11. **Keep business logic separate from UI**: Ensure state management and visual presentation are decoupled in the frontend.
+12. **Prefer small, testable modules**: Write modular, clean, and testable code with high unit test coverage.
+13. **Do not make major architectural changes without documenting them**: Architectural revisions must be logged in `docs/DECISIONS.md`.
 13. **Preserve working functionality when adding features**: Always run existing regression tests to verify that no functional regressions occur.
 14. **Run tests/build checks after significant changes**: Make sure tests pass and builds succeed before completing tasks.
 15. **Update DEVELOPMENT.md after each major milestone**: Log the progress, updated status, and next tasks in the state tracker.

@@ -692,16 +692,27 @@ def get_trends(
     if dataset_id:
         conditions.append(Feedback.dataset_id == dataset_id)
     
-    # Determine grouping function based on granularity (SQLite-compatible)
-    if granularity == "weekly":
-        # Group by week (using date arithmetic)
-        date_func = func.strftime("%Y-%W", Feedback.feedback_timestamp)
-    elif granularity == "monthly":
-        # Group by month
-        date_func = func.strftime("%Y-%m", Feedback.feedback_timestamp)
-    else:  # daily (default)
-        # Group by day
-        date_func = func.strftime("%Y-%m-%d", Feedback.feedback_timestamp)
+    # Determine grouping function based on database dialect (PostgreSQL vs SQLite)
+    bind = getattr(db, "bind", None) or db.get_bind()
+    is_postgres = getattr(bind.dialect, "name", "") == "postgresql"
+
+    if is_postgres:
+        if granularity == "weekly":
+            date_func = func.to_char(Feedback.feedback_timestamp, "YYYY-IW")
+        elif granularity == "monthly":
+            date_func = func.to_char(Feedback.feedback_timestamp, "YYYY-MM")
+        else:  # daily (default)
+            date_func = func.to_char(Feedback.feedback_timestamp, "YYYY-MM-DD")
+    else:
+        if granularity == "weekly":
+            # Group by week (using date arithmetic)
+            date_func = func.strftime("%Y-%W", Feedback.feedback_timestamp)
+        elif granularity == "monthly":
+            # Group by month
+            date_func = func.strftime("%Y-%m", Feedback.feedback_timestamp)
+        else:  # daily (default)
+            # Group by day
+            date_func = func.strftime("%Y-%m-%d", Feedback.feedback_timestamp)
     
     # Query trends by date and sentiment
     query = select(

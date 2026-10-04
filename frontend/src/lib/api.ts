@@ -255,7 +255,12 @@ export class ApiError extends Error {
   }
 }
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1").replace(/\/$/, "");
+function buildApiBaseUrl(): string {
+  // Use a relative path so the browser sends requests to the Next.js server,
+  // which will then proxy them to the backend via next.config.ts rewrites.
+  return "/api/v1";
+}
+const apiBaseUrl = buildApiBaseUrl();
 
 let accessToken: string | null = null;
 let onAuthenticationFailure: (() => void) | null = null;
@@ -269,21 +274,28 @@ function setAuthenticationFailureHandler(handler: (() => void) | null): void {
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => null)) as
-    | ApiEnvelope<T>
-    | ApiErrorEnvelope
-    | null;
+  const body = await response.json().catch(() => null);
 
-  if (!response.ok || !body || body.success === false) {
-    const error = body as ApiErrorEnvelope | null;
+  if (!response.ok) {
     throw new ApiError(
-      error?.error?.message ?? "The server could not complete this request.",
+      body?.error?.message ?? body?.detail ?? "The server could not complete this request.",
       response.status,
-      error?.error?.code,
+      body?.error?.code,
     );
   }
 
-  return (body as ApiEnvelope<T>).data;
+  if (body && typeof body === "object" && "success" in body) {
+    if (body.success === false) {
+      throw new ApiError(
+        body.error?.message ?? "The server could not complete this request.",
+        response.status,
+        body.error?.code,
+      );
+    }
+    return body.data;
+  }
+
+  return body as T;
 }
 
 async function refreshAccessToken(): Promise<AuthResponse> {
@@ -375,13 +387,22 @@ export const api = {
   getDataset: (datasetId: string) => request<Dataset>(`/datasets/${datasetId}`),
   deleteDataset: (datasetId: string) => request<{ message: string }>(`/datasets/${datasetId}`, { method: "DELETE" }),
   uploadDatasetCsv: (datasetId: string, file: File) => upload<UploadSummary>(`/datasets/${datasetId}/upload`, file),
-  listDatasetFeedback: (datasetId: string) => request<Feedback[]>(`/datasets/${datasetId}/feedback`),
+  listDatasetFeedback: (datasetId: string, limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit) params.append("limit", limit.toString());
+    if (offset !== undefined) params.append("offset", offset.toString());
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return request<Feedback[]>(`/datasets/${datasetId}/feedback${query}`);
+  },
+  analyzeDataset: (datasetId: string) => request<{ message: string; dataset_id: string; status: string }>(`/datasets/${datasetId}/analyze`, { method: "POST" }),
+  getDatasetAnalysisStatus: (datasetId: string) => request<{ dataset_id: string; status: string; analyzed_count: number; pending_count: number; failed_count: number }>(`/datasets/${datasetId}/analysis-status`),
   buildDatasetIndex: (datasetId: string) => request<VectorIndexStatus>(`/datasets/${datasetId}/index`, { method: "POST" }),
   getDatasetIndexStatus: (datasetId: string) => request<VectorIndexStatus>(`/datasets/${datasetId}/index-status`),
   semanticSearch: (payload: { workspace_id: string; query: string; top_k: number; dataset_id?: string }) => request<{ workspace_id: string; query: string; results: SemanticSearchResult[] }>("/search", { method: "POST", body: JSON.stringify(payload) }),
   listConversations: (workspaceId: string) => request<Conversation[]>(`/conversations?workspace_id=${encodeURIComponent(workspaceId)}`),
   createConversation: (payload: { workspace_id: string; title?: string }) => request<Conversation>("/conversations", { method: "POST", body: JSON.stringify(payload) }),
   getConversation: (id: string) => request<Conversation & { messages: ChatMessage[] }>(`/conversations/${id}`),
+  deleteConversation: (id: string) => request<{ message: string }>(`/conversations/${id}`, { method: "DELETE" }),
   sendMessage: (id: string, payload: { content: string; dataset_id?: string }) => request<{ message: ChatMessage; answer: string; evidence: Evidence[]; retrieval_metadata: Record<string, unknown> }>(`/conversations/${id}/messages`, { method: "POST", body: JSON.stringify(payload) }),
   // Analytics endpoints
   getOverviewAnalytics: (workspaceId: string, datasetId?: string) => {
@@ -479,4 +500,21 @@ export const api = {
   deleteAlert: (alertId: string) => request<{ message: string }>(`/alerts/${alertId}`, { method: "DELETE" }),
   evaluateAlerts: (workspaceId: string) =>
     request<{ alerts: AlertEvaluationItem[] }>(`/alerts/evaluate?workspace_id=${encodeURIComponent(workspaceId)}`, { method: "POST" }),
+
+  // Demo
+  analyzeDemo: async (text: string) => {
+    const res = await fetch(`${apiBaseUrl}/demo/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) {
+      throw new Error(`Demo analysis failed: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  // Users
+  updateProfile: (payload: { name?: string; current_password?: string; new_password?: string }) =>
+    request<User>("/users/me", { method: "PATCH", body: JSON.stringify(payload) }),
 };
