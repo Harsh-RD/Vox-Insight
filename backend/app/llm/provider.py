@@ -27,9 +27,18 @@ class OpenAIProvider(LLMProvider):
         except httpx.HTTPError as exc:
             raise LLMProviderError("The LLM provider is unavailable", "LLM_UNAVAILABLE") from exc
         if response.status_code == 429:
-            raise LLMProviderError("The LLM provider rate limit was reached", "LLM_RATE_LIMITED")
+            error_code = "LLM_RATE_LIMITED"
+            error_message = "The LLM provider rate limit was reached"
+            try:
+                error_data = response.json().get("error", {})
+                if error_data.get("code") == "insufficient_quota" or error_data.get("code") == "credit_balance_exhausted":
+                    error_message = "Your OpenAI API key has no credits remaining. Please add billing to your account."
+                    error_code = "LLM_QUOTA_EXHAUSTED"
+            except Exception:
+                pass
+            raise LLMProviderError(error_message, error_code)
         if response.status_code >= 400:
-            raise LLMProviderError("The LLM provider could not generate an answer", "LLM_UNAVAILABLE")
+            raise LLMProviderError(f"The LLM provider could not generate an answer: HTTP {response.status_code}", "LLM_UNAVAILABLE")
         try:
             content = response.json()["choices"][0]["message"]["content"].strip()
         except (KeyError, IndexError, TypeError, ValueError, AttributeError) as exc:

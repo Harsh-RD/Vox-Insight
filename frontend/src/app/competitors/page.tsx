@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Users, Search, Plus, Activity, Edit2, Trash2, ShieldAlert, Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 
 import { AppShell } from "@/components/app-shell";
 import { AuthGuard } from "@/components/auth-guard";
@@ -254,12 +255,66 @@ function CompetitorsContent() {
           </FadeIn>
         )}
 
-        {/* Analytics table */}
+        {/* Analytics Section */}
         {analytics.length > 0 && (
           <FadeIn>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
+              <div className="card">
+                <div className="card-header">
+                  <div className="card-title">Share of Voice (Mentions)</div>
+                </div>
+                <div style={{ height: 300, marginTop: "1rem" }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={analytics.filter(a => a.total_mentions > 0)}
+                        dataKey="total_mentions"
+                        nameKey="competitor_name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      >
+                        {analytics.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={`hsl(var(--brand-hue), ${60 + (index * 15)}%, ${45 + (index * 10)}%)`} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}
+                        itemStyle={{ color: "var(--fg)" }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="card-header">
+                  <div className="card-title">Sentiment Breakdown</div>
+                </div>
+                <div style={{ height: 300, marginTop: "1rem" }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analytics.filter(a => a.total_mentions > 0)} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="competitor_name" type="category" width={100} tick={{ fill: 'var(--fg-2)', fontSize: 12 }} stroke="var(--border)" />
+                      <Tooltip
+                        contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}
+                        formatter={(value: number) => [`${value.toFixed(1)}%`, ""]}
+                      />
+                      <Legend />
+                      <Bar dataKey="positive_percentage" name="Positive" stackId="a" fill="var(--success-fg)" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="neutral_percentage" name="Neutral" stackId="a" fill="var(--info-fg)" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="negative_percentage" name="Negative" stackId="a" fill="var(--danger-fg)" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
             <div className="card" style={{ marginBottom: "2rem" }}>
               <div className="card-header">
-                <div className="card-title">Competitor Benchmarking</div>
+                <div className="card-title">Competitor Metrics Details</div>
               </div>
               <div style={{ overflowX: "auto", marginTop: "1rem" }}>
                 <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>

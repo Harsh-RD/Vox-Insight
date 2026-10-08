@@ -97,7 +97,16 @@ async def answer_message(db: Session, *, conversation_id: uuid.UUID, user_id: uu
     if not items:
         assistant = Message(conversation_id=conversation.id, role="assistant", content=INSUFFICIENT_EVIDENCE)
         db.add(assistant); conversation.updated_at = datetime.now(timezone.utc); db.commit(); db.refresh(assistant)
-        return {"message": assistant, "answer": assistant.content, "evidence": [], "retrieval_metadata": {"retrieved_count": len(results), "evidence_count": 0, "dataset_id": str(dataset_id) if dataset_id else None, "provider": None, "model": None}}
+        message_dict = {
+            "id": str(assistant.id),
+            "conversation_id": str(assistant.conversation_id),
+            "role": assistant.role,
+            "content": assistant.content,
+            "provider": assistant.provider,
+            "model": assistant.model,
+            "created_at": assistant.created_at.isoformat()
+        }
+        return {"message": message_dict, "answer": assistant.content, "evidence": [], "retrieval_metadata": {"retrieved_count": len(results), "evidence_count": 0, "dataset_id": str(dataset_id) if dataset_id else None, "provider": None, "model": None}}
     try:
         generation = await get_llm_provider().generate(system_prompt=SYSTEM_PROMPT, user_prompt=build_user_prompt(question=question, context=context, history=history))
     except LLMProviderError as exc:
@@ -109,4 +118,13 @@ async def answer_message(db: Session, *, conversation_id: uuid.UUID, user_id: uu
     conversation.updated_at = datetime.now(timezone.utc)
     db.commit(); db.refresh(assistant)
     evidence = [{"feedback_id": item.feedback_id, "dataset_id": item.dataset_id, "similarity_score": item.similarity_score, "rank": rank, "text": item.text} for rank, item in enumerate(items, 1)]
-    return {"message": assistant, "answer": assistant.content, "evidence": evidence, "retrieval_metadata": {"retrieved_count": len(results), "evidence_count": len(items), "dataset_id": str(dataset_id) if dataset_id else None, "provider": generation.provider, "model": generation.model}}
+    message_dict = {
+        "id": str(assistant.id),
+        "conversation_id": str(assistant.conversation_id),
+        "role": assistant.role,
+        "content": assistant.content,
+        "provider": assistant.provider,
+        "model": assistant.model,
+        "created_at": assistant.created_at.isoformat()
+    }
+    return {"message": message_dict, "answer": assistant.content, "evidence": evidence, "retrieval_metadata": {"retrieved_count": len(results), "evidence_count": len(items), "dataset_id": str(dataset_id) if dataset_id else None, "provider": generation.provider, "model": generation.model}}

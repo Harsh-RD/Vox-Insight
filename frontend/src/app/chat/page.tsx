@@ -24,10 +24,7 @@ function isLlmConfigError(err: unknown): boolean {
   if (err instanceof ApiError) {
     return (
       err.code === "LLM_NOT_CONFIGURED" ||
-      err.code === "LLM_ERROR" ||
-      err.message.toLowerCase().includes("llm") ||
-      err.message.toLowerCase().includes("api key") ||
-      err.message.toLowerCase().includes("provider")
+      err.message.toLowerCase().includes("api key not found")
     );
   }
   return false;
@@ -153,15 +150,37 @@ function ChatContent() {
     [conversationId, loading, messages.length, selectedDatasetId]
   );
 
+  const handleSendOrNew = useCallback(async (text: string, targetConvId?: string) => {
+    if (!text.trim() || loading) return;
+    let activeConvId = targetConvId || conversationId;
+
+    if (!activeConvId) {
+      if (!workspaceId) return;
+      setError(null);
+      try {
+        const conv = await api.createConversation({ workspace_id: workspaceId, title: text.substring(0, 40) });
+        setConversations((prev) => [conv, ...prev]);
+        setConversationId(conv.id);
+        setMessages([]);
+        activeConvId = conv.id;
+      } catch {
+        setError("Could not create a conversation.");
+        return;
+      }
+    }
+
+    await handleSendMessage(text, activeConvId);
+  }, [conversationId, loading, workspaceId, handleSendMessage]);
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    void handleSendMessage(content);
+    void handleSendOrNew(content);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      void handleSendMessage(content);
+      void handleSendOrNew(content);
     }
   }
 
@@ -299,11 +318,7 @@ function ChatContent() {
                         className="btn btn-secondary"
                         style={{ padding: "1rem", justifyContent: "flex-start", textAlign: "left", fontSize: "0.85rem", height: "auto", whiteSpace: "normal", background: "var(--surface-2)" }}
                         onClick={async () => {
-                          const conv = await api.createConversation({ workspace_id: workspaceId });
-                          setConversations((prev) => [conv, ...prev]);
-                          setConversationId(conv.id);
-                          setMessages([]);
-                          await handleSendMessage(p, conv.id);
+                          await handleSendOrNew(p);
                         }}
                       >
                         {p}
@@ -421,18 +436,18 @@ function ChatContent() {
                 />
                 <button
                   type="submit"
-                  disabled={!content.trim() || loading || !conversationId}
+                  disabled={!content.trim() || loading}
                   style={{
                     width: 44,
                     height: 44,
                     borderRadius: "50%",
-                    background: (!content.trim() || loading || !conversationId) ? "var(--border)" : "var(--brand)",
+                    background: (!content.trim() || loading) ? "var(--border)" : "var(--brand)",
                     color: "white",
                     border: "none",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    cursor: (!content.trim() || loading || !conversationId) ? "not-allowed" : "pointer",
+                    cursor: (!content.trim() || loading) ? "not-allowed" : "pointer",
                     transition: "all 0.2s",
                     flexShrink: 0
                   }}

@@ -42,4 +42,4 @@ def delete(conversation_id: uuid.UUID, current_user: User = Depends(get_current_
 @router.post("/{conversation_id}/messages")
 async def message(conversation_id: uuid.UUID, payload: MessageCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     result = await rag_service.answer_message(db, conversation_id=conversation_id, user_id=current_user.id, content=payload.content, dataset_id=payload.dataset_id)
-    return {"success": True, "data": {"message": _message_data(result["message"]), "answer": result["answer"], "evidence": result["evidence"], "retrieval_metadata": result["retrieval_metadata"]}}
+    return {"success": True, "data": {"message": result["message"], "answer": result["answer"], "evidence": result["evidence"], "retrieval_metadata": result["retrieval_metadata"]}}
